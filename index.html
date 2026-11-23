@@ -1,0 +1,1904 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Harcama Defteri</title>
+<meta name="theme-color" content="#f4f6f8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Harcama">
+<meta name="application-name" content="Harcama Defteri">
+<script>
+/* Uygulama olarak yükleme: ikonlar canvas ile çizilir, manifest çalışma anında eklenir (tek dosya) */
+(function () {
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); window.__bip = e; });
+  function icon(s) {
+    try {
+      var c = document.createElement('canvas'); c.width = c.height = s;
+      var x = c.getContext('2d');
+      x.fillStyle = '#2f4bd8'; x.fillRect(0, 0, s, s);
+      x.fillStyle = '#ffffff'; x.font = '700 ' + Math.round(s * 0.36) + 'px system-ui, Arial, sans-serif';
+      x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('₺', s / 2, s / 2 + s * 0.02);
+      return c.toDataURL('image/png');
+    } catch (e) { return ''; }
+  }
+  var i192 = icon(192), i512 = icon(512), i180 = icon(180);
+  window.__icon = i192;
+  try {
+    if (i180) { var a = document.createElement('link'); a.rel = 'apple-touch-icon'; a.href = i180; document.head.appendChild(a); }
+    if (i192 && i512 && /^https?:$/.test(location.protocol)) {
+      var base = location.origin + location.pathname;
+      var m = {
+        name: 'Harcama Defteri', short_name: 'Harcama', lang: 'tr', dir: 'ltr',
+        description: 'Gelir, gider, borç ve alacak takibi',
+        start_url: base, scope: base.replace(/[^\/]*$/, ''), id: base,
+        display: 'standalone', orientation: 'portrait',
+        background_color: '#f4f6f8', theme_color: '#f4f6f8',
+        icons: [
+          { src: i192, sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: i512, sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: i192, sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+          { src: i512, sizes: '512x512', type: 'image/png', purpose: 'maskable' }
+        ]
+      };
+      var l = document.createElement('link'); l.rel = 'manifest';
+      l.href = URL.createObjectURL(new Blob([JSON.stringify(m)], { type: 'application/manifest+json' }));
+      document.head.appendChild(l);
+    }
+  } catch (e) {}
+})();
+</script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+/* Düzen: üstte aylık özet, altında solda form + kategori dağılımı, sağda kayıt listesi; dar ekranda tek sütun */
+:root {
+  --bg: #f4f6f8;
+  --surface: #ffffff;
+  --fg: #141a22;
+  --muted: #5a6573;
+  --line: #e0e5eb;
+  --accent: #2f4bd8;
+  --accent-fg: #ffffff;
+  --pos: #0f7a4d;
+  --neg: #c23b2e;
+  --c1: #3b5bdb;
+  --c2: #e8590c;
+  --c3: #0c8599;
+  --c4: #9c36b5;
+  --c5: #f08c00;
+  --c6: #2f9e44;
+  --c7: #d6336c;
+  --c8: #6b7785;
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1218;
+    --surface: #161b23;
+    --fg: #e8ecf1;
+    --muted: #9aa5b3;
+    --line: #262d38;
+    --accent: #7d94ff;
+    --accent-fg: #0e1218;
+    --pos: #4fc994;
+    --neg: #ff8575;
+    --c1: #7d94ff;
+    --c2: #ff9248;
+    --c3: #3cc4d9;
+    --c4: #d48cf0;
+    --c5: #ffc247;
+    --c6: #5fd37a;
+    --c7: #ff7aa8;
+    --c8: #9aa5b3;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1218;
+  --surface: #161b23;
+  --fg: #e8ecf1;
+  --muted: #9aa5b3;
+  --line: #262d38;
+  --accent: #7d94ff;
+  --accent-fg: #0e1218;
+  --pos: #4fc994;
+  --neg: #ff8575;
+  --c1: #7d94ff;
+  --c2: #ff9248;
+  --c3: #3cc4d9;
+  --c4: #d48cf0;
+  --c5: #ffc247;
+  --c6: #5fd37a;
+  --c7: #ff7aa8;
+  --c8: #9aa5b3;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  padding-block: 20px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 980px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+h1, h2 { font-family: var(--font-display); margin: 0; text-wrap: balance; }
+h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 1rem; font-weight: 600; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* üst bar */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.month { display: flex; align-items: center; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 3px; }
+.month button { width: 34px; height: 34px; border: 0; background: transparent; border-radius: 7px; font-size: 1.1rem; }
+.month button:hover:not(:disabled) { background: var(--bg); }
+.month button:disabled { opacity: 0.3; cursor: default; }
+.month span { min-width: 120px; text-align: center; font-weight: 600; text-transform: capitalize; }
+
+/* özet */
+.summary { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 12px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; min-width: 0; }
+.stat .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 500; }
+.stat .value { font-family: var(--font-display); font-weight: 700; font-size: 1.5rem; margin-top: 2px; overflow-wrap: anywhere; }
+.stat.main .value { font-size: 2rem; letter-spacing: -0.02em; }
+.pos { color: var(--pos); }
+.neg { color: var(--neg); }
+
+/* örnek veri uyarısı */
+.banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; background: var(--surface); border: 1px dashed var(--line); border-radius: 10px; padding: 10px 14px; color: var(--muted); font-size: 0.9rem; }
+.banner button { border: 1px solid var(--line); background: transparent; border-radius: 8px; padding: 6px 12px; font-weight: 500; color: var(--fg); }
+.banner button:hover { background: var(--bg); }
+
+/* ana düzen */
+.layout { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 16px; align-items: start; }
+.col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+/* form */
+form { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 0.8rem; color: var(--muted); font-weight: 500; }
+.field input, .field select { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; width: 100%; min-width: 0; }
+.field input:focus, .field select:focus { border-color: var(--accent); }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.seg { position: relative; display: grid; grid-template-columns: 1fr 1fr; background: var(--bg); border: 1px solid var(--line); border-radius: 9px; padding: 3px; gap: 3px; }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg label { text-align: center; padding: 7px 0; border-radius: 6px; cursor: pointer; font-weight: 500; color: var(--muted); }
+.seg input:checked + label { background: var(--surface); color: var(--fg); box-shadow: 0 0 0 1px var(--line); }
+.seg input:focus-visible + label { outline: 2px solid var(--accent); outline-offset: 1px; }
+.btn { border: 0; background: var(--accent); color: var(--accent-fg); border-radius: 9px; padding: 11px 14px; font-weight: 600; }
+.btn:hover { filter: brightness(1.08); }
+.err { margin: 0; min-height: 1.2em; color: var(--neg); font-size: 0.85rem; }
+.err.ok { color: var(--pos); font-weight: 500; }
+
+/* kategori dağılımı */
+.stack { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: var(--bg); margin: 14px 0 12px; gap: 2px; }
+.stack i { display: block; height: 100%; }
+.legend { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.legend li { display: grid; grid-template-columns: 10px 1fr auto 44px; gap: 8px; align-items: center; font-size: 0.9rem; }
+.legend .pct { text-align: right; color: var(--muted); font-size: 0.8rem; }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.muted { color: var(--muted); }
+
+/* liste */
+.listhead { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.chips, .fchips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chips button, .fchips button { border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 4px 12px; font-size: 0.85rem; color: var(--muted); }
+.chips button[aria-pressed="true"], .fchips button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.day { margin-top: 16px; }
+.day h3 { margin: 0 0 4px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 500; }
+.item { display: grid; grid-template-columns: 10px 1fr auto 32px; gap: 10px; align-items: center; padding: 9px 0; border-top: 1px solid var(--line); }
+.item:first-of-type { border-top: 0; }
+.item .t { min-width: 0; }
+.item .t b { font-weight: 500; }
+.item .t small { display: block; color: var(--muted); overflow-wrap: anywhere; }
+.item .amt { font-weight: 600; white-space: nowrap; }
+.item .del { width: 32px; height: 32px; border: 0; background: transparent; border-radius: 7px; color: var(--muted); font-size: 1.1rem; line-height: 1; }
+.item .del:hover { background: var(--bg); color: var(--neg); }
+.empty { color: var(--muted); padding: 24px 0 8px; text-align: center; }
+
+/* üst bar düğmeleri */
+.topr { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ghost { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 7px 12px; font-weight: 500; font-size: 0.9rem; }
+.ghost:hover { background: var(--bg); }
+
+/* aylık özet */
+.months { display: flex; flex-direction: column; margin-top: 8px; max-height: 340px; overflow-y: auto; }
+.mrow { display: grid; grid-template-columns: 1fr auto; gap: 0 12px; text-align: left; border: 0; border-top: 1px solid var(--line); background: transparent; padding: 10px 6px; border-radius: 0; }
+.mrow:first-child { border-top: 0; }
+.mrow:hover, .mrow[aria-current="true"] { background: var(--bg); }
+.mrow[aria-current="true"] .mname { font-weight: 700; }
+.mname { font-weight: 500; text-transform: capitalize; }
+.mbal { font-weight: 600; }
+.msub { grid-column: 1 / -1; color: var(--muted); font-size: 0.8rem; }
+
+/* bulut yedeği */
+.cloud { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: 0.9rem; color: var(--muted); }
+.cloud.bad { border-color: var(--neg); }
+.cloud .cb { display: flex; gap: 8px; flex-wrap: wrap; }
+
+
+/* PIN kilidi */
+.lock { position: fixed; inset: 0; z-index: 30; background: var(--bg); display: flex; align-items: center; justify-content: center; overflow: auto; padding: calc(16px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.lockbox { width: 100%; max-width: 300px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.lockbox p { margin: 0; }
+.dots { display: flex; gap: 14px; margin: 12px 0 2px; }
+.dots i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--muted); }
+.dots i.on { background: var(--fg); border-color: var(--fg); }
+.pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; margin-top: 6px; }
+.pad button { height: 58px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); font-family: var(--font-display); font-size: 1.4rem; font-weight: 500; }
+.pad button:hover { background: var(--bg); }
+.pad .blank { visibility: hidden; }
+.link { border: 0; background: transparent; color: var(--muted); text-decoration: underline; padding: 6px; margin-top: 6px; }
+
+/* sekmeler ve görünümler */
+.view { display: flex; flex-direction: column; gap: 16px; }
+.tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 3px; }
+.tabs button { border: 0; background: transparent; border-radius: 7px; padding: 9px 0; font-weight: 500; color: var(--muted); }
+.tabs button[aria-selected="true"] { background: var(--bg); color: var(--fg); box-shadow: 0 0 0 1px var(--line); }
+.hint { margin: 0; font-size: 0.8rem; }
+
+/* borç ve alacak */
+.debt { padding: 12px 0; border-top: 1px solid var(--line); }
+.debt:first-child { border-top: 0; }
+.debt.closed { opacity: 0.6; }
+.dh { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: start; }
+.debt .t { min-width: 0; }
+.debt .t b { font-weight: 600; }
+.debt .t small { display: block; color: var(--muted); overflow-wrap: anywhere; }
+.debt .amt { font-weight: 600; white-space: nowrap; }
+.tag { display: inline-block; font-size: 0.7rem; font-weight: 600; padding: 0 8px; border-radius: 999px; border: 1px solid currentColor; margin-right: 6px; }
+.tag.owed { color: var(--pos); }
+.tag.owe { color: var(--neg); }
+.late { color: var(--neg); font-weight: 500; }
+.prog { height: 4px; background: var(--bg); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+.prog i { display: block; height: 100%; background: var(--accent); }
+.dsub { display: block; margin-top: 4px; color: var(--muted); font-size: 0.8rem; }
+.dact { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.dact .ghost { padding: 5px 10px; font-size: 0.82rem; }
+.payrow { display: flex; gap: 6px; align-items: center; margin-top: 8px; }
+.payrow input { flex: 1; min-width: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.payrow .btn { padding: 8px 12px; }
+
+.item{grid-template-columns:10px 1fr auto 32px 32px}
+.item .ed{width:32px;height:32px;border:0;background:transparent;border-radius:7px;color:var(--muted);font-size:1rem}
+.item .ed:hover{background:var(--bg);color:var(--accent)}
+.chk{display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--muted)}
+.search{width:100%;margin-top:10px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 11px}
+.payrow{flex-wrap:wrap}
+.accrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.accrow .grow{flex:1;min-width:0}
+.avatar{width:48px;height:48px;font-size:1.2rem;border-radius:50%;background:var(--pos);color:#fff;display:grid;place-items:center;font-weight:700;border:2px solid var(--accent);flex:none}
+.ghost.neg{color:var(--neg);border-color:var(--neg)}
+#accName{font-size:1.05rem}
+.accbtns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.abtn{border:1px solid var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--surface));color:var(--accent);border-radius:10px;padding:12px 8px;font-weight:600}
+.abtn.out{border-color:var(--neg);background:color-mix(in srgb,var(--neg) 14%,var(--surface));color:var(--neg)}
+.topr{width:100%;flex-wrap:nowrap}
+.topr .ghost{white-space:nowrap;flex:none}
+.month{flex:1;min-width:0}
+.month span{flex:1;min-width:0}
+/* bildirim */
+.toast { position: fixed; left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); margin: 0 auto; max-width: 420px; display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--fg); color: var(--bg); border-radius: 10px; padding: 10px 14px; z-index: 20; }
+.toast button { border: 0; background: transparent; color: inherit; font-weight: 600; text-decoration: underline; padding: 4px; }
+
+@media (max-width: 760px) {
+  .summary { grid-template-columns: 1fr 1fr; }
+  .stat.main { grid-column: 1 / -1; }
+  .layout { grid-template-columns: minmax(0, 1fr); }
+}
+/* üstte yan yana düğmeler */
+.btnrow { display: flex; gap: 10px; }
+.btnrow > * { flex: 1; min-width: 0; }
+.btnrow > #accOut { display: flex; }
+.btnrow .btn { width: 100%; padding: 12px 8px; font-size: 0.92rem; line-height: 1.25; }
+.btnrow:has(> :not([hidden])) + #accIn { margin-top: 12px; }
+/* hesap ve yedek tek kartta */
+.panel .cloud { border: 0; background: transparent; padding: 0; margin-top: 12px; border-radius: 0; flex-direction: column; align-items: stretch; gap: 10px; }
+.panel .cloud.bad { border: 0; }
+.cloud.bad #cloudStatus { color: var(--neg); }
+.btnrow:not(:has(> :not([hidden]))) + #accIn[hidden] + .cloud { margin-top: 0; }
+/* notlar */
+.tabs button { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 0.72rem; padding: 7px 0; white-space: nowrap; min-width: 0; }
+.tabs .ic { font-size: 1.25rem; line-height: 1; }
+.field textarea { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; width: 100%; min-width: 0; resize: vertical; min-height: 84px; }
+.field textarea:focus { border-color: var(--accent); }
+.note { display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: start; padding: 12px 0; border-top: 1px solid var(--line); }
+.note:first-child { border-top: 0; }
+.nchk { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--muted); background: transparent; font-size: 1rem; line-height: 1; color: #fff; padding: 0; }
+.note.done .nchk { background: var(--pos); border-color: var(--pos); }
+.note .t { min-width: 0; }
+.note .t b { font-weight: 500; white-space: pre-wrap; overflow-wrap: anywhere; }
+.note.done .t b { text-decoration: line-through; color: var(--muted); }
+.note .t small { display: block; color: var(--muted); margin-top: 2px; }
+.note.late .t small { color: var(--neg); font-weight: 500; }
+.nact { display: flex; gap: 2px; }
+.nact button, .nact a { width: 34px; height: 34px; display: grid; place-items: center; border: 0; background: transparent; border-radius: 7px; color: var(--muted); font-size: 1rem; text-decoration: none; padding: 0; }
+.nact button:hover, .nact a:hover { background: var(--bg); color: var(--accent); }
+.nact .nd:hover { color: var(--neg); }
+@media (max-width: 350px) { .tabs button { font-size: 0.64rem; letter-spacing: -0.2px; } }
+#bioRow .ghost { width: 100%; }
+#bioBtn { width: 100%; margin: 6px 0 4px; }
+/* defter */
+.bnote { padding: 12px 0; border-top: 1px solid var(--line); }
+.bnote:first-child { border-top: 0; }
+.bnote .bt { white-space: pre-wrap; overflow-wrap: anywhere; }
+.bnote .bm { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; color: var(--muted); font-size: 0.82rem; }
+.bnote .nact button { width: 34px; height: 34px; }
+/* karşılama ve yükleme yardımı */
+.welcome { position: fixed; inset: 0; z-index: 40; background: var(--bg); overflow: auto; display: flex; padding: calc(20px + env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) max(20px, env(safe-area-inset-left, 0px)); }
+.wbox { width: 100%; max-width: 420px; margin: auto; display: flex; flex-direction: column; gap: 14px; text-align: center; }
+.wbox > img { width: 88px; height: 88px; border-radius: 22px; margin: 0 auto; display: block; border: 1px solid var(--line); }
+.wbox h1, .wbox h2 { font-size: 1.6rem; }
+.wbox p { margin: 0; }
+.wlist { list-style: none; margin: 0; padding: 14px 16px; text-align: left; display: flex; flex-direction: column; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.wlist li { display: grid; grid-template-columns: 28px 1fr; gap: 8px; align-items: start; }
+.whow { text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; }
+.whow ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+.whow .hint { margin-top: 10px; }
+.btn.big { padding: 14px; font-size: 1.05rem; }
+.wbox .sub { color: var(--muted); font-size: 0.85rem; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+</head>
+<body>
+<div class="wrap" id="app" hidden>
+  <div class="panel">
+    <div class="btnrow"><button type="button" class="btn" id="instBtn" hidden>📲 Uygulama olarak yükle</button><div id="accOut"><button type="button" class="btn" id="gIn">Google ile giriş</button></div></div>
+    <div id="accIn" hidden><div class="accrow"><span class="avatar" id="accAv"></span><div class="grow"><b id="accName"></b><small class="muted" id="accMail" style="display:block;overflow-wrap:anywhere"></small></div></div><div class="accbtns"><button type="button" class="abtn" id="cSave">☁ Buluta kaydet</button><button type="button" class="abtn out" id="gOut">⎋ Çıkış</button></div></div>
+  <div class="cloud" id="cloud">
+    <span id="cloudStatus">Yedek durumu kontrol ediliyor…</span>
+    <div class="cb">
+      <button type="button" class="ghost" id="bkDown">Yedekle</button>
+      <button type="button" class="ghost" id="bkOpen">Geri yükle</button><button type="button" class="ghost" id="csvDown">CSV</button>
+      <input type="file" id="bkFile" accept=".json,application/json,text/plain" hidden>
+    </div>
+  </div>
+  </div>
+
+  <div class="top">
+    
+    <div class="topr">
+    
+    <button type="button" class="ghost" id="chPin">PIN koy</button>
+    <div class="month" id="monthBox" role="group" aria-label="Ay seçimi">
+      <button type="button" id="prev" aria-label="Önceki ay">‹</button>
+      <span id="monthLabel" aria-live="polite"></span>
+      <button type="button" id="next" aria-label="Sonraki ay">›</button>
+    </div>
+    </div>
+  </div>
+  <div id="bioRow" hidden><button type="button" class="ghost" id="chBio">👆 Parmak iziyle girişi aç</button></div>
+
+  <div class="tabs" role="tablist" aria-label="Bölüm">
+    <button type="button" role="tab" id="tabLedger" aria-selected="true"><span class="ic">💸</span>Harcamalar</button>
+    <button type="button" role="tab" id="tabDebt" aria-selected="false"><span class="ic">🤝</span>Borç &amp; Alacak</button>
+    <button type="button" role="tab" id="tabNotes" aria-selected="false"><span class="ic">📝</span>Hatırlatıcı</button>
+    <button type="button" role="tab" id="tabBook" aria-selected="false"><span class="ic">📓</span>Defter</button>
+  </div>
+
+  <div class="view" id="viewLedger">
+  <section class="summary" aria-label="Aylık özet">
+    <div class="panel stat main"><div class="label">Bakiye</div><div class="value num" id="sBal"></div></div>
+    <div class="panel stat"><div class="label">Gelir</div><div class="value num pos" id="sInc"></div></div>
+    <div class="panel stat"><div class="label">Gider</div><div class="value num neg" id="sExp"></div></div>
+  </section>
+
+  <div class="banner" id="banner" hidden>
+    <span>Gördüğün kayıtlar örnek. Kendi kayıtlarını eklerken karışmasın diye silebilirsin.</span>
+    <button type="button" id="clearSample">Örnekleri sil</button>
+  </div>
+
+  <div class="layout">
+    <div class="col">
+      <section class="panel" aria-labelledby="formTitle">
+        <h2 id="formTitle">Yeni kayıt</h2>
+        <form id="f" novalidate>
+          <div class="seg" role="radiogroup" aria-label="Kayıt türü">
+            <input type="radio" name="type" id="tExp" value="expense" checked>
+            <label for="tExp">Gider</label>
+            <input type="radio" name="type" id="tInc" value="income">
+            <label for="tInc">Gelir</label>
+          </div>
+          <div class="row2">
+            <div class="field">
+              <label for="amount">Tutar (₺)</label>
+              <input id="amount" type="text" inputmode="decimal" placeholder="0,00" autocomplete="off" enterkeyhint="done">
+            </div>
+            <div class="field">
+              <label for="date">Tarih</label>
+              <input id="date" type="date">
+            </div>
+          </div>
+          <div class="field">
+            <label for="cat">Kategori</label>
+            <select id="cat"></select>
+          </div>
+          <div class="field">
+            <label for="note">Not</label>
+            <input id="note" type="text" maxlength="60" placeholder="İsteğe bağlı" autocomplete="off">
+          </div>
+          <p class="err" id="err" role="alert"></p>
+          <button class="btn" type="submit" id="addBtn">Kaydı ekle</button><button type="button" class="ghost" id="cancelEdit" hidden>Düzenlemeden vazgeç</button>
+        </form>
+      </section>
+
+      <section class="panel" aria-labelledby="catTitle">
+        <h2 id="catTitle">Giderler kategoriye göre</h2>
+        <div id="cats"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="monTitle">
+        <h2 id="monTitle">Aylık özet</h2>
+        <div id="months" class="months"></div>
+      </section>
+    </div>
+
+    <section class="panel" aria-labelledby="listTitle">
+      <div class="listhead">
+        <h2 id="listTitle">Kayıtlar</h2>
+        <div class="chips" role="group" aria-label="Filtre">
+          <button type="button" data-f="all" aria-pressed="true">Tümü</button>
+          <button type="button" data-f="expense" aria-pressed="false">Gider</button>
+          <button type="button" data-f="income" aria-pressed="false">Gelir</button>
+        </div>
+      </div>
+      <input type="search" class="search" id="q" placeholder="Tüm kayıtlarda ara (not, kategori)" aria-label="Ara"><div id="list"></div>
+    </section>
+  </div>
+  </div>
+
+  <div class="view" id="viewDebt" hidden>
+    <section class="summary" aria-label="Borç ve alacak özeti">
+      <div class="panel stat main"><div class="label">Net durum</div><div class="value num" id="sdNet"></div></div>
+      <div class="panel stat"><div class="label">Alacağım</div><div class="value num pos" id="sdOwed"></div></div>
+      <div class="panel stat"><div class="label">Borcum</div><div class="value num neg" id="sdOwe"></div></div>
+    </section>
+
+    <div class="layout">
+      <section class="panel" aria-labelledby="dFormTitle">
+        <h2 id="dFormTitle">Yeni borç / alacak</h2>
+        <form id="df" novalidate>
+          <div class="seg" role="radiogroup" aria-label="Kayıt türü">
+            <input type="radio" name="dir" id="rOwed" value="owed" checked>
+            <label for="rOwed">Alacağım</label>
+            <input type="radio" name="dir" id="rOwe" value="owe">
+            <label for="rOwe">Borcum</label>
+          </div>
+          <p class="muted hint">Alacak: biri sana borçlu. Borç: sen birine borçlusun.</p>
+          <div class="field">
+            <label for="dperson">Kişi</label>
+            <input id="dperson" type="text" maxlength="40" list="people" placeholder="Kimle?" autocomplete="off">
+            <datalist id="people"></datalist>
+          </div>
+          <div class="row2">
+            <div class="field">
+              <label for="damount">Tutar (₺)</label>
+              <input id="damount" type="text" inputmode="decimal" placeholder="0,00" autocomplete="off" enterkeyhint="done">
+            </div>
+            <div class="field">
+              <label for="ddate">Tarih</label>
+              <input id="ddate" type="date">
+            </div>
+          </div>
+          <div class="field">
+            <label for="ddue">Vade (isteğe bağlı)</label>
+            <input id="ddue" type="date">
+          </div>
+          <div class="field">
+            <label for="dnote">Not</label>
+            <input id="dnote" type="text" maxlength="60" placeholder="İsteğe bağlı" autocomplete="off">
+          </div>
+          <p class="err" id="derr" role="alert"></p>
+          <button class="btn" type="submit" id="dAdd">Kaydı ekle</button>
+        </form>
+      </section>
+
+      <section class="panel" aria-labelledby="dListTitle">
+        <div class="listhead">
+          <h2 id="dListTitle">Kayıtlar</h2>
+          <div class="fchips" id="dchips" role="group" aria-label="Filtre">
+            <button type="button" data-d="all" aria-pressed="true">Tümü</button>
+            <button type="button" data-d="owe" aria-pressed="false">Borçlarım</button>
+            <button type="button" data-d="owed" aria-pressed="false">Alacaklarım</button>
+          </div>
+        </div>
+        <div class="fchips" style="margin-top:10px"><button type="button" id="dClosed" aria-pressed="false">Kapananları da göster</button></div>
+        <div id="dlist"></div>
+      </section>
+    </div>
+  </div>
+
+  <div class="view" id="viewNotes" hidden>
+    <section class="summary" aria-label="Not özeti">
+      <div class="panel stat main"><div class="label">Açık notlar</div><div class="value num" id="snOpen"></div></div>
+      <div class="panel stat"><div class="label">Bugün</div><div class="value num" id="snToday"></div></div>
+      <div class="panel stat"><div class="label">Geciken</div><div class="value num" id="snLate"></div></div>
+    </section>
+
+    <div class="layout">
+      <section class="panel" aria-labelledby="nFormTitle">
+        <h2 id="nFormTitle">Yeni not</h2>
+        <form id="nf" novalidate>
+          <div class="field">
+            <label for="ntext">Not</label>
+            <textarea id="ntext" rows="3" maxlength="300" placeholder="Ne hatırlatılsın?"></textarea>
+          </div>
+          <div class="field">
+            <label for="nat">Hatırlatma zamanı (isteğe bağlı)</label>
+            <input id="nat" type="datetime-local">
+          </div>
+          <p class="err" id="nerr" role="alert"></p>
+          <button class="btn" type="submit" id="nAdd">Notu ekle</button>
+          <button type="button" class="ghost" id="nCancel" hidden>Düzenlemeden vazgeç</button>
+        </form>
+      </section>
+
+      <section class="panel" aria-labelledby="nListTitle">
+        <div class="listhead">
+          <h2 id="nListTitle">Notlar</h2>
+          <div class="fchips" id="nchips" role="group" aria-label="Filtre">
+            <button type="button" data-n="open" aria-pressed="true">Açık</button>
+            <button type="button" data-n="done" aria-pressed="false">Tamamlanan</button>
+          </div>
+        </div>
+        <div id="nlist"></div>
+      </section>
+    </div>
+  </div>
+
+  <div class="view" id="viewBook" hidden>
+    <div class="layout">
+      <section class="panel" aria-labelledby="bFormTitle">
+        <h2 id="bFormTitle">Yeni not</h2>
+        <form id="bf" novalidate>
+          <div class="field">
+            <label for="btext">Not</label>
+            <textarea id="btext" rows="6" maxlength="5000" placeholder="Aklındakini yaz…"></textarea>
+          </div>
+          <p class="err" id="berr" role="alert"></p>
+          <button class="btn" type="submit" id="bAdd">Kaydet</button>
+          <button type="button" class="ghost" id="bCancel" hidden>Düzenlemeden vazgeç</button>
+        </form>
+      </section>
+
+      <section class="panel" aria-labelledby="bListTitle">
+        <div class="listhead"><h2 id="bListTitle">Defterim</h2></div>
+        <div class="field"><input id="bq" type="search" placeholder="Notlarda ara" aria-label="Notlarda ara"></div>
+        <div id="blist"></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div class="welcome" id="welcome" role="dialog" aria-modal="true" aria-labelledby="wT" hidden>
+  <div class="wbox">
+    <img id="wLogo" alt="" width="88" height="88">
+    <h1 id="wT">Harcama Defteri’ne hoş geldin</h1>
+    <p class="muted">Gelir, gider, borç ve alacaklarını tek yerde, telefonunda tut.</p>
+    <ul class="wlist">
+      <li><span aria-hidden="true">💸</span><span>Gelir ve giderlerini kategoriye göre takip et</span></li>
+      <li><span aria-hidden="true">🤝</span><span>Borç ve alacaklarını vadesiyle birlikte izle</span></li>
+      <li><span aria-hidden="true">☁️</span><span>Google ile buluta yedekle, kayıtların kaybolmasın</span></li>
+      <li><span aria-hidden="true">🔒</span><span>İstersen PIN ile kilitle</span></li>
+    </ul>
+    <div class="whow" id="wHow" hidden></div>
+    <button type="button" class="btn big" id="wInst">📲 Uygulama olarak yükle</button>
+    <button type="button" class="btn big" id="wGo" hidden>Tamam, devam et</button>
+    <button type="button" class="link" id="wSkip">Şimdilik tarayıcıda kullan</button>
+    <p class="sub">Kayıtların bu cihazda durur. Yedek almayı unutma.</p>
+  </div>
+</div>
+
+<div class="welcome" id="instHelp" role="dialog" aria-modal="true" aria-labelledby="ihT" hidden>
+  <div class="wbox">
+    <h2 id="ihT">Uygulama olarak yükle</h2>
+    <div class="whow" id="ihBody"></div>
+    <button type="button" class="btn" id="ihOk">Tamam</button>
+  </div>
+</div>
+
+<div class="lock" id="lock" hidden>
+  <div class="lockbox">
+    <h2 id="lockTitle">PIN gir</h2>
+    <p class="muted" id="lockSub"></p>
+    <div class="dots" id="dots" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    <p class="err" id="lockErr" role="alert"></p>
+    <button type="button" class="btn" id="bioBtn" hidden>👆 Parmak iziyle aç</button>
+    <div class="pad" id="pad"></div>
+    <button type="button" class="link" id="skip" hidden></button>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden>
+  <span id="toastMsg"></span>
+  <button type="button" id="toastBtn">Geri al</button>
+</div>
+
+<script>
+(function () {
+  var KEY = 'harcama-defteri-v1';
+  var CATS = {
+    expense: [['Market', 1], ['Yemek', 2], ['Ulaşım', 3], ['Fatura', 4], ['Eğlence', 5], ['Sağlık', 6], ['Alışveriş', 7], ['Diğer', 8]],
+    income: [['Maaş', 6], ['Ek gelir', 3], ['Diğer', 8]]
+  };
+  var fmt = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' });
+  var today = new Date();
+  var CKEY = 'harcama-defteri-cats';
+  var custom = { expense: [], income: [] }, q = '', editId = '';
+  function lj(k, d) { try { var v = JSON.parse(localStorage.getItem(k)); return v || d; } catch (e) { return d; } }
+  function sj(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  custom = lj(CKEY, custom); custom.expense = custom.expense || []; custom.income = custom.income || [];
+ 
+  CATS.expense.push(['Borç ödemesi', 8]); CATS.income.push(['Tahsilat', 3]);
+  function applyCats() {
+    ['expense', 'income'].forEach(function (t) {
+      CATS[t] = CATS[t].filter(function (c) { return !c.cu; });
+      custom[t].forEach(function (n, i) { var c = [n, (i % 8) + 1]; c.cu = 1; CATS[t].push(c); });
+    });
+  }
+  applyCats();
+  var view = { y: today.getFullYear(), m: today.getMonth() };
+  var filter = 'all';
+  var items = [];
+  var undoFn = null;
+  var DKEY = 'harcama-defteri-debts';
+  var debts = [];
+  var notes = [];
+  var book = [];
+  var toastTimer = null;
+
+  function $(id) { return document.getElementById(id); }
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function ymd(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function colorOf(it) {
+    var f = CATS[it.type].filter(function (c) { return c[0] === it.cat; })[0];
+    return 'var(--c' + (f ? f[1] : 8) + ')';
+  }
+  // "150,50", "150.50", "1.250,50", "1,250.50", "1250" gibi yazımların hepsini sayıya çevirir
+  function parseAmount(v) {
+    var s = String(v).replace(/[\s₺]|TL/gi, '');
+    if (!s || !/^[\d.,]+$/.test(s)) return NaN;
+    var lc = s.lastIndexOf(','), ld = s.lastIndexOf('.');
+    if (lc >= 0 && ld >= 0) {
+      var dec = lc > ld ? ',' : '.', th = lc > ld ? '.' : ',';
+      s = s.split(th).join('').replace(dec, '.');
+    } else if (lc >= 0) {
+      s = s.split(',').length > 2 ? s.split(',').join('') : s.replace(',', '.');
+    } else if (ld >= 0) {
+      if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.split('.').join('');
+      else if (s.split('.').length > 2) return NaN;
+    }
+    var n = parseFloat(s);
+    return isFinite(n) ? Math.round(n * 100) / 100 : NaN;
+  }
+  function monthKey() { return view.y + '-' + pad(view.m + 1); }
+  function isCurrentMonth() { return view.y === today.getFullYear() && view.m === today.getMonth(); }
+
+  var TSKEY = 'harcama-defteri-ts';
+  var SYNCKEY = 'harcama-defteri-sync';
+  var localTs = '', syncedTs = '', cloudTs = '', CTSKEY = 'harcama-defteri-cts';
+  try { localTs = localStorage.getItem(TSKEY) || ''; syncedTs = localStorage.getItem(SYNCKEY) || ''; cloudTs = localStorage.getItem(CTSKEY) || ''; } catch (e) {}
+  var cloud = { ref: null, busy: false, dirty: false, timer: null, ctimer: null, confirming: false, conflict: false };
+  function userItems() { return items.filter(function (i) { return !i.sample; }); }
+  function hasData() { return userItems().length + debts.length + notes.length + book.length > 0; }
+  function save(skipBackup) {
+    try { localStorage.setItem(KEY, JSON.stringify(items)); } catch (e) {}
+    if (skipBackup) return;
+    localTs = new Date().toISOString();
+    try { localStorage.setItem(TSKEY, localTs); } catch (e) {}
+    scheduleBackup();
+  }
+  function load() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (raw !== null) { var a = JSON.parse(raw); if (Array.isArray(a)) return a; }
+    } catch (e) {}
+    return null;
+  }
+
+  function sampleData() {
+    var last = today.getDate();
+    var rows = [
+      [1, 'income', 'Maaş', 38500, 'Kasım maaşı'],
+      [1, 'expense', 'Fatura', 9800, 'Kira'],
+      [2, 'expense', 'Market', 1260.5, 'Haftalık alışveriş'],
+      [3, 'expense', 'Ulaşım', 420, 'Akbil yükleme'],
+      [5, 'expense', 'Yemek', 385, 'Akşam yemeği'],
+      [6, 'expense', 'Fatura', 1450, 'Elektrik'],
+      [8, 'expense', 'Eğlence', 240, 'Sinema'],
+      [9, 'income', 'Ek gelir', 3200, 'Serbest iş'],
+      [11, 'expense', 'Market', 940.75, 'Manav ve fırın'],
+      [13, 'expense', 'Sağlık', 560, 'Eczane'],
+      [15, 'expense', 'Alışveriş', 1890, 'Kışlık mont'],
+      [17, 'expense', 'Yemek', 210, 'Öğle yemeği'],
+      [19, 'expense', 'Ulaşım', 650, 'Yakıt'],
+      [20, 'expense', 'Market', 715.25, 'Hafta sonu alışverişi'],
+      [22, 'expense', 'Yemek', 160, 'Kahve ve simit']
+    ];
+    return rows.filter(function (r) { return r[0] <= last; }).map(function (r, i) {
+      return { id: 's' + i, type: r[1], cat: r[2], amount: r[3], note: r[4], date: view.y + '-' + pad(view.m + 1) + '-' + pad(r[0]), sample: true };
+    });
+  }
+
+  function fillCats() {
+    var type = document.querySelector('input[name="type"]:checked').value;
+    $('cat').innerHTML = CATS[type].map(function (c) { return '<option>' + esc(c[0]) + '</option>'; }).join('') + '<option value="__add">＋ Yeni kategori…</option><option value="__del">− Kategori sil…</option>';
+  }
+
+  function render() {
+    var d = new Date(view.y, view.m, 1);
+    $('monthLabel').textContent = d.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
+    $('next').disabled = isCurrentMonth();
+
+    var key = monthKey();
+    var month = items.filter(function (i) { return i.date.slice(0, 7) === key; });
+    var inc = 0, exp = 0;
+    month.forEach(function (i) { if (i.type === 'income') inc += i.amount; else exp += i.amount; });
+    var bal = inc - exp;
+    $('sBal').textContent = fmt.format(bal);
+    $('sBal').className = 'value num ' + (bal < 0 ? 'neg' : '');
+    $('sInc').textContent = fmt.format(inc);
+    $('sExp').textContent = fmt.format(exp);
+    $('banner').hidden = !items.some(function (i) { return i.sample; });
+
+    renderCats(month, exp);
+    renderList(q ? items.filter(function (i) { return (i.cat + ' ' + (i.note || '')).toLowerCase().indexOf(q) >= 0; }) : month);
+    renderMonths();
+    renderDebts();
+    renderNotes();
+    renderBook();
+  }
+
+  function renderMonths() {
+    var by = {};
+    items.forEach(function (i) {
+      var k = i.date.slice(0, 7);
+      var m = by[k] || (by[k] = { inc: 0, exp: 0 });
+      if (i.type === 'income') m.inc += i.amount; else m.exp += i.amount;
+    });
+    var keys = Object.keys(by).sort().reverse();
+    if (!keys.length) { $('months').innerHTML = '<p class="empty">Henüz kayıt yok.</p>'; return; }
+    var cur = monthKey();
+    $('months').innerHTML = keys.map(function (k) {
+      var m = by[k], bal = m.inc - m.exp, p = k.split('-');
+      var label = new Date(+p[0], +p[1] - 1, 1).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
+      return '<button type="button" class="mrow" data-m="' + k + '"' + (k === cur ? ' aria-current="true"' : '') + '>' +
+        '<span class="mname">' + label + '</span>' +
+        '<span class="mbal num ' + (bal < 0 ? 'neg' : 'pos') + '">' + fmt.format(bal) + '</span>' +
+        '<small class="msub num">Gelir ' + fmt.format(m.inc) + ' · Gider ' + fmt.format(m.exp) + '</small></button>';
+    }).join('');
+  }
+
+  function renderCats(month, total) {
+    var by = {};
+    month.forEach(function (i) { if (i.type === 'expense') by[i.cat] = (by[i.cat] || 0) + i.amount; });
+    var rows = Object.keys(by).map(function (k) { return { name: k, v: by[k], color: colorOf({ type: 'expense', cat: k }) }; })
+      .sort(function (a, b) { return b.v - a.v; });
+    if (!rows.length) {
+      $('cats').innerHTML = '<p class="empty">Bu ay gider yok.</p>';
+      return;
+    }
+    var bar = rows.map(function (r) { return '<i style="width:' + (r.v / (total || 1) * 100).toFixed(2) + '%;background:' + r.color + '" title="' + esc(r.name) + '"></i>'; }).join('');
+    var leg = rows.map(function (r) {
+      return '<li><span class="dot" style="background:' + r.color + '"></span><span>' + esc(r.name) + '</span><span class="num">' + fmt.format(r.v) + '</span><span class="pct num">%' + Math.round(r.v / (total || 1) * 100) + '</span></li>';
+    }).join('');
+    $('cats').innerHTML = '<div class="stack" role="img" aria-label="Gider dağılımı">' + bar + '</div><ul class="legend">' + leg + '</ul>';
+  }
+
+  function renderList(month) {
+    var rows = month.filter(function (i) { return filter === 'all' || i.type === filter; })
+      .sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; });
+    if (!rows.length) {
+      var emsg = month.length ? 'Bu filtrede kayıt yok.' : (q ? 'Aramayla eşleşen kayıt yok.' : '');
+      $('list').innerHTML = emsg ? '<p class="empty">' + emsg + '</p>' : '';
+      return;
+    }
+    var html = '', cur = '';
+    rows.forEach(function (i) {
+      if (i.date !== cur) {
+        if (cur) html += '</div>';
+        cur = i.date;
+        var p = i.date.split('-');
+        var label = new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' });
+        html += '<div class="day"><h3>' + esc(label) + '</h3>';
+      }
+      var sign = i.type === 'income' ? '+' : '−';
+      html += '<div class="item"><span class="dot" style="background:' + colorOf(i) + '"></span>' +
+        '<div class="t"><b>' + esc(i.cat) + '</b>' + (i.note ? '<small>' + esc(i.note) + '</small>' : '') + '</div>' +
+        '<span class="amt num ' + (i.type === 'income' ? 'pos' : '') + '">' + sign + ' ' + fmt.format(i.amount) + '</span>' +
+        '<button class="ed" type="button" data-id="' + esc(i.id) + '" aria-label="Düzenle">✎</button><button class="del" type="button" data-id="' + esc(i.id) + '" aria-label="Kaydı sil">×</button></div>';
+    });
+    $('list').innerHTML = html + '</div>';
+  }
+
+  function toast(msg, withUndo, ms) {
+    $('toastMsg').textContent = msg;
+    $('toastBtn').hidden = !withUndo;
+    $('toast').hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { $('toast').hidden = true; undoFn = null; }, ms || 5000);
+  }
+
+  // olaylar
+  document.querySelectorAll('input[name="type"]').forEach(function (r) { r.addEventListener('change', fillCats); });
+
+  function say(msg, ok) { var el = $('err'); el.textContent = msg; el.className = 'err' + (ok ? ' ok' : ''); }
+
+  $('f').addEventListener('submit', function (e) {
+    e.preventDefault();
+    try {
+      var amount = parseAmount($('amount').value);
+      var date = $('date').value;
+      if (!(amount > 0)) { say('Tutarı rakamla gir, örnek: 150,50'); $('amount').focus(); return; }
+      if (!date) { say('Bir tarih seç.'); $('date').focus(); return; }
+      var type = document.querySelector('input[name="type"]:checked').value;
+      var cat = $('cat').value, note = $('note').value.trim(), wasEdit = !!editId;
+      if (cat === '__add' || cat === '__del') { say('Bir kategori seç.'); return; }
+      if (editId) {
+        var it = items.filter(function (x) { return x.id === editId; })[0];
+        if (it) { it.type = type; it.cat = cat; it.amount = amount; it.note = note; it.date = date; delete it.sample; }
+      } else {
+        var nid = 'u' + Date.now() + Math.random().toString(36).slice(2, 6), ni = { id: nid, type: type, cat: cat, amount: amount, note: note, date: date };
+        items.push(ni);
+      }
+      save();
+      var p = date.split('-');
+      view = { y: +p[0], m: +p[1] - 1 };
+      $('amount').value = '';
+      $('note').value = ''; endEdit();
+      render();
+      say('✓ ' + (type === 'income' ? 'Gelir' : 'Gider') + (wasEdit ? ' güncellendi: ' : ' eklendi: ') + fmt.format(amount), true);
+      toast(type === 'income' ? 'Gelir eklendi.' : 'Gider eklendi.', false);
+    } catch (ex) {
+      say('Kayıt eklenemedi: ' + (ex && ex.message ? ex.message : ex));
+    }
+  });
+  // yazmaya başlayınca eski mesaj kalksın
+  $('amount').addEventListener('input', function () { say(''); });
+  // klavye açıkken düğmeye dokununca odak kaymasın; ekran kayıp tıklamayı yutmasın
+  $('addBtn').addEventListener('mousedown', function (e) { e.preventDefault(); });
+
+  $('list').addEventListener('click', function (e) {
+    var b = e.target.closest('.del');
+    if (!b) return;
+    var id = b.getAttribute('data-id');
+    var idx = items.findIndex(function (i) { return i.id === id; });
+    if (idx < 0) return;
+    var removed = items.splice(idx, 1)[0];
+    save();
+    render();
+    undoFn = function () { items.push(removed); save(); render(); };
+    toast('Kayıt silindi.', true);
+  });
+
+  $('toastBtn').addEventListener('click', function () {
+    if (undoFn) { var f = undoFn; undoFn = null; f(); }
+    $('toast').hidden = true;
+  });
+
+  $('months').addEventListener('click', function (e) {
+    var b = e.target.closest('.mrow');
+    if (!b) return;
+    var p = b.getAttribute('data-m').split('-');
+    view = { y: +p[0], m: +p[1] - 1 };
+    render();
+    window.scrollTo(0, 0);
+  });
+
+  $('prev').addEventListener('click', function () { view.m--; if (view.m < 0) { view.m = 11; view.y--; } render(); });
+  $('next').addEventListener('click', function () { if (isCurrentMonth()) return; view.m++; if (view.m > 11) { view.m = 0; view.y++; } render(); });
+
+  document.querySelectorAll('.chips button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      filter = b.getAttribute('data-f');
+      document.querySelectorAll('.chips button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      render();
+    });
+  });
+
+  $('clearSample').addEventListener('click', function () {
+    items = items.filter(function (i) { return !i.sample; });
+    save(true);
+    render();
+  });
+
+  function endEdit() { editId = ''; $('addBtn').textContent = 'Kaydı ekle'; $('cancelEdit').hidden = true; $('formTitle').textContent = 'Yeni kayıt'; }
+  $('cancelEdit').addEventListener('click', function () { endEdit(); $('amount').value = ''; $('note').value = ''; say(''); });
+  $('list').addEventListener('click', function (e) {
+    var b = e.target.closest('.ed'); if (!b) return;
+    var it = items.filter(function (x) { return x.id === b.getAttribute('data-id'); })[0]; if (!it) return;
+    editId = it.id; $(it.type === 'income' ? 'tInc' : 'tExp').checked = true; fillCats();
+    if (!CATS[it.type].some(function (c) { return c[0] === it.cat; })) $('cat').insertAdjacentHTML('afterbegin', '<option>' + esc(it.cat) + '</option>');
+    $('cat').value = it.cat; $('amount').value = String(it.amount).replace('.', ','); $('date').value = it.date; $('note').value = it.note || '';
+    $('addBtn').textContent = 'Güncelle'; $('cancelEdit').hidden = false; $('formTitle').textContent = 'Kaydı düzenle'; say('');
+    $('f').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+  $('cat').addEventListener('change', function () {
+    var t = document.querySelector('input[name="type"]:checked').value, v = this.value;
+    if (v !== '__add' && v !== '__del') return;
+    if (v === '__add') {
+      var n = (prompt('Yeni kategori adı:') || '').trim().slice(0, 30);
+      if (n && !CATS[t].some(function (c) { return c[0].toLowerCase() === n.toLowerCase(); })) { custom[t].push(n); sj(CKEY, custom); applyCats(); fillCats(); this.value = n; } else fillCats();
+    } else {
+      var d = (prompt('Silinecek kategori (' + (custom[t].join(', ') || 'özel kategori yok') + '):') || '').trim(), i = custom[t].indexOf(d);
+      if (i >= 0) { custom[t].splice(i, 1); sj(CKEY, custom); applyCats(); }
+      fillCats();
+    }
+  });
+  $('q').addEventListener('input', function () { q = this.value.trim().toLowerCase(); render(); });
+
+  // ---- Borçlarım ve alacaklarım ----
+  var dFilter = 'all', showClosed = false;
+  var DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+  function cleanDebts(arr) {
+    if (!Array.isArray(arr)) return [];
+    return arr.filter(function (d) {
+      return d && (d.dir === 'owe' || d.dir === 'owed') && typeof d.person === 'string' && d.person.trim() &&
+        typeof d.amount === 'number' && isFinite(d.amount) && d.amount > 0 &&
+        typeof d.id === 'string' && typeof d.date === 'string' && DATE_RE.test(d.date);
+    }).map(function (d) {
+      var pay = Array.isArray(d.pay) ? d.pay.filter(function (x) {
+        return x && typeof x.a === 'number' && isFinite(x.a) && x.a > 0 && typeof x.d === 'string' && DATE_RE.test(x.d);
+      }).map(function (x) { return { a: x.a, d: x.d, l: typeof x.l === 'string' ? x.l : '' }; }) : [];
+      return {
+        id: d.id, dir: d.dir, person: d.person.trim().slice(0, 40), amount: d.amount, date: d.date,
+        due: typeof d.due === 'string' && DATE_RE.test(d.due) ? d.due : '',
+        note: typeof d.note === 'string' ? d.note.slice(0, 60) : '', pay: pay
+      };
+    });
+  }
+  function loadDebts() {
+    try {
+      var raw = localStorage.getItem(DKEY);
+      if (raw !== null) { var a = JSON.parse(raw); if (Array.isArray(a)) return cleanDebts(a); }
+    } catch (e) {}
+    return [];
+  }
+  function saveDebts() {
+    try { localStorage.setItem(DKEY, JSON.stringify(debts)); } catch (e) {}
+    localTs = new Date().toISOString();
+    try { localStorage.setItem(TSKEY, localTs); } catch (e) {}
+    scheduleBackup();
+  }
+  function paidOf(d) { var t = 0; d.pay.forEach(function (x) { t += x.a; }); return Math.round(t * 100) / 100; }
+  function remOf(d) { return Math.max(0, Math.round((d.amount - paidOf(d)) * 100) / 100); }
+  function dayLabel(str) {
+    var p = str.split('-'), dt = new Date(+p[0], +p[1] - 1, +p[2]);
+    var o = { day: 'numeric', month: 'short' };
+    if (dt.getFullYear() !== today.getFullYear()) o.year = 'numeric';
+    return dt.toLocaleDateString('tr-TR', o);
+  }
+  function daysTo(str) {
+    var p = str.split('-'), t = new Date(+p[0], +p[1] - 1, +p[2]);
+    var n = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    return Math.round((t - n) / 86400000);
+  }
+  function sayD(msg, ok) { var el = $('derr'); el.textContent = msg; el.className = 'err' + (ok ? ' ok' : ''); }
+
+  function renderDebts() {
+    var owe = 0, owed = 0;
+    debts.forEach(function (d) { var r = remOf(d); if (d.dir === 'owe') owe += r; else owed += r; });
+    var net = Math.round((owed - owe) * 100) / 100;
+    $('sdNet').textContent = fmt.format(net);
+    $('sdNet').className = 'value num ' + (net < 0 ? 'neg' : net > 0 ? 'pos' : '');
+    $('sdOwed').textContent = fmt.format(owed);
+    $('sdOwe').textContent = fmt.format(owe);
+
+    var names = {};
+    debts.forEach(function (d) { names[d.person] = 1; });
+    $('people').innerHTML = Object.keys(names).sort().map(function (n) { return '<option value="' + esc(n) + '"></option>'; }).join('');
+
+    var mk = monthKey();
+    var rows = debts.filter(function (d) { return d.date.slice(0, 7) === mk && (dFilter === 'all' || d.dir === dFilter) && (showClosed || remOf(d) > 0); });
+    if (!rows.length) {
+      var inMonth = debts.some(function (d) { return d.date.slice(0, 7) === mk; });
+      $('dlist').innerHTML = inMonth ? '<p class="empty">Bu filtrede açık kayıt yok.</p>' : (debts.length ? '<p class="empty">Bu ay borç ya da alacak kaydı yok.</p>' : '');
+      return;
+    }
+    rows.sort(function (a, b) {
+      var ca = remOf(a) === 0, cb = remOf(b) === 0;
+      if (ca !== cb) return ca ? 1 : -1;
+      if (a.due && b.due) return a.due < b.due ? -1 : a.due > b.due ? 1 : 0;
+      if (a.due) return -1;
+      if (b.due) return 1;
+      return a.date < b.date ? 1 : a.date > b.date ? -1 : 0;
+    });
+    $('dlist').innerHTML = rows.map(function (d) {
+      var rem = remOf(d), paid = paidOf(d), closed = rem === 0, isOwe = d.dir === 'owe';
+      var meta = [dayLabel(d.date)];
+      if (d.due && !closed) {
+        var n = daysTo(d.due);
+        meta.push('<span class="' + (n < 0 ? 'late' : '') + '">Vade ' + dayLabel(d.due) + ' · ' + (n < 0 ? (-n) + ' gün gecikti' : n === 0 ? 'bugün' : n + ' gün kaldı') + '</span>');
+      }
+      if (d.note) meta.push(esc(d.note));
+      var h = '<div class="debt' + (closed ? ' closed' : '') + '" data-id="' + esc(d.id) + '">' +
+        '<div class="dh"><div class="t"><b>' + esc(d.person) + '</b><small><span class="tag ' + d.dir + '">' + (isOwe ? 'Borç' : 'Alacak') + '</span>' + meta.join(' · ') + '</small></div>' +
+        '<span class="amt num ' + (closed ? 'muted' : isOwe ? 'neg' : 'pos') + '">' + (closed ? 'Kapandı' : fmt.format(rem)) + '</span></div>';
+      if (paid > 0) {
+        h += '<div class="prog" role="img" aria-label="Ödenen oran"><i style="width:' + Math.min(100, paid / d.amount * 100).toFixed(1) + '%"></i></div>' +
+          '<span class="dsub num">Toplam ' + fmt.format(d.amount) + ' · ' + (isOwe ? 'Ödenen ' : 'Tahsil edilen ') + fmt.format(paid) + '</span>';
+      }
+      h += '<div class="dact">';
+      if (!closed) {
+        h += '<button type="button" class="ghost" data-act="pay">' + (isOwe ? 'Ödeme yap' : 'Tahsilat ekle') + '</button>' +
+          '<button type="button" class="ghost" data-act="close">' + (isOwe ? 'Tamamen ödendi' : 'Tamamen tahsil edildi') + '</button>';
+      }
+      h += '<button type="button" class="ghost" data-act="del">Sil</button></div>';
+      if (!closed) {
+        h += '<div class="payrow" hidden><input type="text" class="pamt" inputmode="decimal" placeholder="Tutar" aria-label="Tutar" autocomplete="off">' +
+          '<label class="chk"><input type="checkbox" class="plink" checked>Bakiyeye ekle</label><button type="button" class="btn" data-act="paysave">Kaydet</button><button type="button" class="ghost" data-act="paycancel">İptal</button></div>';
+      }
+      return h + '</div>';
+    }).join('');
+  }
+
+  $('df').addEventListener('submit', function (e) {
+    e.preventDefault();
+    try {
+      var person = $('dperson').value.trim();
+      var amount = parseAmount($('damount').value);
+      var date = $('ddate').value, due = $('ddue').value;
+      if (!person) { sayD('Kişinin adını yaz.'); $('dperson').focus(); return; }
+      if (!(amount > 0)) { sayD('Tutarı rakamla gir, örnek: 150,50'); $('damount').focus(); return; }
+      if (!date) { sayD('Bir tarih seç.'); $('ddate').focus(); return; }
+      if (due && due < date) { sayD('Vade, kayıt tarihinden önce olamaz.'); $('ddue').focus(); return; }
+      var dir = document.querySelector('input[name="dir"]:checked').value;
+      debts.push({ id: 'd' + Date.now() + Math.random().toString(36).slice(2, 6), dir: dir, person: person.slice(0, 40), amount: amount, date: date, due: due, note: $('dnote').value.trim(), pay: [] });
+      saveDebts();
+      $('dperson').value = ''; $('damount').value = ''; $('ddue').value = ''; $('dnote').value = '';
+      var dp = date.split('-'); view = { y: +dp[0], m: +dp[1] - 1 };
+      render();
+      sayD('✓ ' + (dir === 'owe' ? 'Borç' : 'Alacak') + ' eklendi: ' + person + ' · ' + fmt.format(amount), true);
+      toast(dir === 'owe' ? 'Borç eklendi.' : 'Alacak eklendi.', false);
+    } catch (ex) {
+      sayD('Kayıt eklenemedi: ' + (ex && ex.message ? ex.message : ex));
+    }
+  });
+  $('damount').addEventListener('input', function () { sayD(''); });
+  $('dAdd').addEventListener('mousedown', function (e) { e.preventDefault(); });
+
+  $('dlist').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-act]');
+    if (!b) return;
+    var box = b.closest('.debt');
+    var id = box.getAttribute('data-id');
+    var d = debts.filter(function (x) { return x.id === id; })[0];
+    if (!d) return;
+    var act = b.getAttribute('data-act'), rem = remOf(d);
+    if (act === 'pay') {
+      var row = box.querySelector('.payrow');
+      row.hidden = !row.hidden;
+      if (!row.hidden) { var inp = row.querySelector('input'); inp.value = String(rem).replace('.', ','); inp.focus(); inp.select(); }
+      return;
+    }
+    if (act === 'paycancel') { box.querySelector('.payrow').hidden = true; return; }
+    if (act === 'paysave' || act === 'close') {
+      var amt = act === 'close' ? rem : parseAmount(box.querySelector('.pamt').value);
+      if (!(amt > 0)) { toast('Tutarı rakamla gir.', false); return; }
+      if (amt > rem) { toast('Tutar kalan miktardan fazla olamaz.', false); return; }
+      var added = { a: amt, d: ymd(new Date()) }, linked = null, lk = box.querySelector('.plink');
+      if (lk && lk.checked) {
+        linked = { id: 'u' + Date.now() + Math.random().toString(36).slice(2, 6), type: d.dir === 'owe' ? 'expense' : 'income', cat: d.dir === 'owe' ? 'Borç ödemesi' : 'Tahsilat', amount: amt, note: d.person, date: added.d };
+        items.push(linked); added.l = linked.id; save();
+      }
+      d.pay.push(added);
+      saveDebts();
+      render();
+      undoFn = function () { var i = d.pay.indexOf(added); if (i >= 0) d.pay.splice(i, 1); if (linked) { items = items.filter(function (x) { return x !== linked; }); save(); } saveDebts(); render(); };
+      toast(act === 'close' ? 'Kayıt kapandı.' : (d.dir === 'owe' ? 'Ödeme eklendi.' : 'Tahsilat eklendi.'), true);
+      return;
+    }
+    if (act === 'del') {
+      debts.splice(debts.indexOf(d), 1);
+      saveDebts();
+      renderDebts();
+      undoFn = function () { debts.push(d); saveDebts(); renderDebts(); };
+      toast('Kayıt silindi.', true);
+    }
+  });
+  $('dlist').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && e.target.classList.contains('pamt')) {
+      e.preventDefault();
+      e.target.closest('.debt').querySelector('[data-act="paysave"]').click();
+    }
+  });
+
+  document.querySelectorAll('#dchips button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      dFilter = b.getAttribute('data-d');
+      document.querySelectorAll('#dchips button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      renderDebts();
+    });
+  });
+  $('dClosed').addEventListener('click', function () {
+    showClosed = !showClosed;
+    this.setAttribute('aria-pressed', showClosed ? 'true' : 'false');
+    renderDebts();
+  });
+
+  // ---- Notlar ve hatırlatıcı ----
+  var NKEY = 'harcama-defteri-notes';
+  var AT_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
+  var nFilter = 'open', nEdit = '';
+
+  function cleanNotes(arr) {
+    if (!Array.isArray(arr)) return [];
+    return arr.filter(function (n) {
+      return n && typeof n.id === 'string' && typeof n.text === 'string' && n.text.trim();
+    }).map(function (n) {
+      return {
+        id: n.id, text: n.text.trim().slice(0, 300),
+        at: typeof n.at === 'string' && AT_RE.test(n.at) ? n.at : '',
+        done: !!n.done, al: !!n.al, c: typeof n.c === 'string' ? n.c : ''
+      };
+    });
+  }
+  function loadNotes() {
+    try {
+      var raw = localStorage.getItem(NKEY);
+      if (raw !== null) { var a = JSON.parse(raw); if (Array.isArray(a)) return cleanNotes(a); }
+    } catch (e) {}
+    return [];
+  }
+  function saveNotes(skipBackup) {
+    try { localStorage.setItem(NKEY, JSON.stringify(notes)); } catch (e) {}
+    if (skipBackup) return;
+    localTs = new Date().toISOString();
+    try { localStorage.setItem(TSKEY, localTs); } catch (e) {}
+    scheduleBackup();
+  }
+  function atMs(n) { return new Date(n.at).getTime(); }
+  function dtLocal(d) { return ymd(d) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+  function icsLocal(ms) {
+    var d = new Date(ms);
+    return d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + 'T' + pad(d.getHours()) + pad(d.getMinutes()) + '00';
+  }
+  function relText(ms) {
+    var diff = ms - Date.now(), a = Math.abs(diff), v, u;
+    if (a < 60000) return 'şimdi';
+    if (a < 3600000) { v = Math.round(a / 60000); u = 'dk'; }
+    else if (a < 86400000) { v = Math.round(a / 3600000); u = 'saat'; }
+    else { v = Math.round(a / 86400000); u = 'gün'; }
+    return v + ' ' + u + (diff > 0 ? ' sonra' : ' önce');
+  }
+  function calLink(n) {
+    var tz = '';
+    try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) {}
+    var st = atMs(n);
+    return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent('📝 ' + n.text.slice(0, 80)) +
+      '&dates=' + icsLocal(st) + '/' + icsLocal(st + 1800000) + '&details=' + encodeURIComponent(n.text) + (tz ? '&ctz=' + encodeURIComponent(tz) : '');
+  }
+  function sayN(msg, ok) { var el = $('nerr'); el.textContent = msg; el.className = 'err' + (ok ? ' ok' : ''); }
+
+  function renderNotes() {
+    var now = Date.now(), todayStr = ymd(new Date());
+    var open = notes.filter(function (n) { return !n.done; });
+    var late = open.filter(function (n) { return n.at && atMs(n) < now; }).length;
+    var today = open.filter(function (n) { return n.at && n.at.slice(0, 10) === todayStr; }).length;
+    $('snOpen').textContent = String(open.length);
+    $('snToday').textContent = String(today);
+    $('snLate').textContent = String(late);
+    $('snLate').className = 'value num ' + (late ? 'neg' : '');
+
+    var rows = notes.filter(function (n) { return nFilter === 'done' ? n.done : !n.done; });
+    rows.sort(function (a, b) {
+      if (nFilter === 'done') return a.c < b.c ? 1 : a.c > b.c ? -1 : 0;
+      if (a.at && b.at) return a.at < b.at ? -1 : a.at > b.at ? 1 : 0;
+      if (a.at) return -1;
+      if (b.at) return 1;
+      return a.c < b.c ? 1 : a.c > b.c ? -1 : 0;
+    });
+    if (!rows.length) {
+      $('nlist').innerHTML = notes.length ? '<p class="empty">' + (nFilter === 'done' ? 'Tamamlanan not yok.' : 'Açık not yok.') + '</p>' : '';
+      return;
+    }
+    $('nlist').innerHTML = rows.map(function (n) {
+      var isLate = !n.done && n.at && atMs(n) < now, meta = '';
+      if (n.at) {
+        var when = new Date(atMs(n)).toLocaleString('tr-TR', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+        meta = '<small>⏰ ' + esc(when) + (n.done ? '' : ' · ' + (isLate ? 'gecikti, ' : '') + esc(relText(atMs(n)))) + '</small>';
+      }
+      return '<div class="note' + (n.done ? ' done' : '') + (isLate ? ' late' : '') + '" data-id="' + esc(n.id) + '">' +
+        '<button type="button" class="nchk" data-act="toggle" aria-label="' + (n.done ? 'Tamamlandı işaretini kaldır' : 'Tamamlandı olarak işaretle') + '">' + (n.done ? '✓' : '') + '</button>' +
+        '<div class="t"><b>' + esc(n.text) + '</b>' + meta + '</div>' +
+        '<div class="nact">' +
+        (n.at && !n.done ? '<a href="' + esc(calLink(n)) + '" target="_blank" rel="noopener noreferrer" aria-label="Google Takvim’e ekle" title="Google Takvim’e ekle">📅</a>' : '') +
+        '<button type="button" data-act="edit" aria-label="Düzenle">✎</button>' +
+        '<button type="button" class="nd" data-act="del" aria-label="Notu sil">×</button></div></div>';
+    }).join('');
+  }
+
+  function endNEdit() { nEdit = ''; $('nAdd').textContent = 'Notu ekle'; $('nCancel').hidden = true; $('nFormTitle').textContent = 'Yeni not'; }
+  function setNFilter(f) {
+    nFilter = f;
+    document.querySelectorAll('#nchips button').forEach(function (x) { x.setAttribute('aria-pressed', x.getAttribute('data-n') === f ? 'true' : 'false'); });
+  }
+
+  $('nf').addEventListener('submit', function (e) {
+    e.preventDefault();
+    try {
+      var text = $('ntext').value.trim(), at = ($('nat').value || '').slice(0, 16);
+      if (!text) { sayN('Notu yaz.'); $('ntext').focus(); return; }
+      if (at && !AT_RE.test(at)) { sayN('Hatırlatma zamanı geçersiz.'); return; }
+      var cur = nEdit ? notes.filter(function (x) { return x.id === nEdit; })[0] : null;
+      if (at && new Date(at).getTime() < Date.now() - 60000 && !(cur && cur.at === at)) { sayN('Hatırlatma zamanı geçmiş. İleri bir zaman seç.'); $('nat').focus(); return; }
+      var wasEdit = !!cur, calNote = null;
+      if (cur) {
+        cur.text = text.slice(0, 300);
+        if (cur.at !== at) { cur.at = at; cur.al = false; if (at) calNote = cur; }
+      } else {
+        var nn = { id: 'n' + Date.now() + Math.random().toString(36).slice(2, 6), text: text.slice(0, 300), at: at, done: false, al: false, c: new Date().toISOString() };
+        notes.push(nn);
+        if (at) calNote = nn;
+      }
+      saveNotes();
+      endNEdit();
+      $('ntext').value = ''; $('nat').value = '';
+      setNFilter('open');
+      renderNotes();
+      sayN('✓ ' + (wasEdit ? 'Not güncellendi.' : 'Not eklendi.'), true);
+      var calOpened = true;
+      if (calNote) {
+        // Zamanlı not: Google Takvim doldurulmuş olarak açılır, orada Kaydet'e basmak yeterli
+        try { var cw = window.open(calLink(calNote), '_blank'); if (cw) { try { cw.opener = null; } catch (e2) {} } else calOpened = false; } catch (e3) { calOpened = false; }
+      }
+      toast((wasEdit ? 'Not güncellendi.' : 'Not eklendi.') + (calNote ? (calOpened ? ' Takvim açıldı, Kaydet’e bas.' : ' Takvim açılamadı, 📅 düğmesine bas.') : ''), false, calNote ? 8000 : 0);
+    } catch (ex) {
+      sayN('Kaydedilemedi: ' + (ex && ex.message ? ex.message : ex));
+    }
+  });
+  $('ntext').addEventListener('input', function () { sayN(''); });
+  $('nAdd').addEventListener('mousedown', function (e) { e.preventDefault(); });
+  $('nCancel').addEventListener('click', function () { endNEdit(); $('ntext').value = ''; $('nat').value = ''; sayN(''); });
+  document.querySelectorAll('#nchips button').forEach(function (b) {
+    b.addEventListener('click', function () { setNFilter(b.getAttribute('data-n')); renderNotes(); });
+  });
+  $('nlist').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-act]'); if (!b) return;
+    var box = b.closest('.note'), id = box.getAttribute('data-id');
+    var n = notes.filter(function (x) { return x.id === id; })[0]; if (!n) return;
+    var act = b.getAttribute('data-act');
+    if (act === 'toggle') { n.done = !n.done; saveNotes(); renderNotes(); return; }
+    if (act === 'edit') {
+      nEdit = n.id; $('ntext').value = n.text; $('nat').value = n.at;
+      $('nAdd').textContent = 'Güncelle'; $('nCancel').hidden = false; $('nFormTitle').textContent = 'Notu düzenle'; sayN('');
+      $('nf').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    if (act === 'del') {
+      notes.splice(notes.indexOf(n), 1);
+      if (nEdit === n.id) { endNEdit(); $('ntext').value = ''; $('nat').value = ''; }
+      saveNotes(); renderNotes();
+      undoFn = function () { notes.push(n); saveNotes(); renderNotes(); };
+      toast('Not silindi.', true);
+    }
+  });
+
+  // Zamanı gelen hatırlatıcılar: uygulama açıkken uyarı verir
+  function checkNotes() {
+    if (document.hidden || $('app').hidden || !$('lock').hidden || !$('welcome').hidden) return;
+    var now = Date.now();
+    var due = notes.filter(function (n) { return !n.done && n.at && !n.al && atMs(n) <= now; });
+    if (!due.length) return;
+    due.forEach(function (n) { n.al = true; });
+    saveNotes(true);
+    renderNotes();
+    toast(due.length === 1 ? '⏰ ' + due[0].text.slice(0, 80) : '⏰ ' + due.length + ' hatırlatıcının zamanı geldi', false, 12000);
+  }
+  setInterval(checkNotes, 15000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) setTimeout(checkNotes, 400); });
+
+  // ---- Defter (sade not defteri) ----
+  var BKEY = 'harcama-defteri-defter';
+  var bEdit = '';
+  function cleanBook(arr) {
+    if (!Array.isArray(arr)) return [];
+    return arr.filter(function (n) {
+      return n && typeof n.id === 'string' && typeof n.text === 'string' && n.text.trim();
+    }).map(function (n) {
+      return { id: n.id, text: n.text.trim().slice(0, 5000), c: typeof n.c === 'string' ? n.c : '', u: typeof n.u === 'string' ? n.u : '' };
+    });
+  }
+  function loadBook() {
+    try {
+      var raw = localStorage.getItem(BKEY);
+      if (raw !== null) { var a = JSON.parse(raw); if (Array.isArray(a)) return cleanBook(a); }
+    } catch (e) {}
+    return [];
+  }
+  function saveBook() {
+    try { localStorage.setItem(BKEY, JSON.stringify(book)); } catch (e) {}
+    localTs = new Date().toISOString();
+    try { localStorage.setItem(TSKEY, localTs); } catch (e) {}
+    scheduleBackup();
+  }
+  function sayB(msg, ok) { var el = $('berr'); el.textContent = msg; el.className = 'err' + (ok ? ' ok' : ''); }
+  function fmtBook(iso) {
+    var d = new Date(iso); if (isNaN(d)) return '';
+    return d.toLocaleString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+  function renderBook() {
+    var q = ($('bq').value || '').trim().toLocaleLowerCase('tr-TR');
+    var rows = book.slice().sort(function (a, b) { var x = a.u || a.c, y = b.u || b.c; return x < y ? 1 : x > y ? -1 : 0; });
+    if (q) rows = rows.filter(function (n) { return n.text.toLocaleLowerCase('tr-TR').indexOf(q) >= 0; });
+    if (!rows.length) { $('blist').innerHTML = q ? '<p class="empty">Aramayla eşleşen not yok.</p>' : ''; return; }
+    $('blist').innerHTML = rows.map(function (n) {
+      var d = n.u || n.c;
+      return '<div class="bnote" data-id="' + esc(n.id) + '"><div class="bt">' + esc(n.text) + '</div>' +
+        '<div class="bm"><span>' + esc(d ? fmtBook(d) + (n.u ? ' (düzenlendi)' : '') : '') + '</span>' +
+        '<span class="nact"><button type="button" data-act="edit" aria-label="Düzenle">✎</button>' +
+        '<button type="button" class="nd" data-act="del" aria-label="Notu sil">×</button></span></div></div>';
+    }).join('');
+  }
+  function endBEdit() { bEdit = ''; $('bAdd').textContent = 'Kaydet'; $('bCancel').hidden = true; $('bFormTitle').textContent = 'Yeni not'; }
+  $('bf').addEventListener('submit', function (e) {
+    e.preventDefault();
+    try {
+      var text = $('btext').value.trim();
+      if (!text) { sayB('Bir şeyler yaz.'); $('btext').focus(); return; }
+      var cur = bEdit ? book.filter(function (x) { return x.id === bEdit; })[0] : null, now = new Date().toISOString();
+      if (cur) { cur.text = text.slice(0, 5000); cur.u = now; }
+      else book.push({ id: 'b' + Date.now() + Math.random().toString(36).slice(2, 6), text: text.slice(0, 5000), c: now, u: '' });
+      saveBook(); endBEdit(); $('btext').value = ''; $('bq').value = '';
+      renderBook(); sayB('✓ Kaydedildi.', true);
+      toast(cur ? 'Not güncellendi.' : 'Not kaydedildi.', false);
+    } catch (ex) { sayB('Kaydedilemedi: ' + (ex && ex.message ? ex.message : ex)); }
+  });
+  $('btext').addEventListener('input', function () { sayB(''); });
+  $('bAdd').addEventListener('mousedown', function (e) { e.preventDefault(); });
+  $('bCancel').addEventListener('click', function () { endBEdit(); $('btext').value = ''; sayB(''); });
+  $('bq').addEventListener('input', renderBook);
+  $('blist').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-act]'); if (!b) return;
+    var id = b.closest('.bnote').getAttribute('data-id');
+    var n = book.filter(function (x) { return x.id === id; })[0]; if (!n) return;
+    if (b.getAttribute('data-act') === 'edit') {
+      bEdit = n.id; $('btext').value = n.text; $('bAdd').textContent = 'Güncelle'; $('bCancel').hidden = false; $('bFormTitle').textContent = 'Notu düzenle'; sayB('');
+      $('bf').scrollIntoView({ behavior: 'smooth', block: 'center' }); $('btext').focus();
+      return;
+    }
+    book.splice(book.indexOf(n), 1);
+    if (bEdit === n.id) { endBEdit(); $('btext').value = ''; }
+    saveBook(); renderBook();
+    undoFn = function () { book.push(n); saveBook(); renderBook(); };
+    toast('Not silindi.', true);
+  });
+
+  // sekmeler
+  var TABKEY = 'harcama-defteri-tab';
+  function setTab(t) {
+    if (t !== 'debt' && t !== 'notes' && t !== 'book') t = 'ledger';
+    $('viewLedger').hidden = t !== 'ledger';
+    $('viewDebt').hidden = t !== 'debt';
+    $('viewNotes').hidden = t !== 'notes';
+    $('viewBook').hidden = t !== 'book';
+    $('monthBox').hidden = t === 'notes' || t === 'book';
+    [['ledger', 'tabLedger'], ['debt', 'tabDebt'], ['notes', 'tabNotes'], ['book', 'tabBook']].forEach(function (x) {
+      $(x[1]).setAttribute('aria-selected', t === x[0] ? 'true' : 'false');
+    });
+    if (t === 'notes') renderNotes();
+    if (t === 'book') renderBook();
+    try { localStorage.setItem(TABKEY, t); } catch (e) {}
+  }
+  $('tabLedger').addEventListener('click', function () { setTab('ledger'); });
+  $('tabDebt').addEventListener('click', function () { setTab('debt'); });
+  $('tabNotes').addEventListener('click', function () { setTab('notes'); });
+  $('tabBook').addEventListener('click', function () { setTab('book'); });
+  $('ddate').value = ymd(today); $('ddate').max = ymd(today);
+  var savedTab = '';
+  try { savedTab = localStorage.getItem(TABKEY) || ''; } catch (e) {}
+  if (savedTab === 'debt' || savedTab === 'notes' || savedTab === 'book') setTab(savedTab);
+
+  // başlangıç
+  $('date').value = ymd(today);
+  $('date').max = ymd(today);
+  // ---- Uygulama olarak yükle ve karşılama ekranı ----
+  var WKEY = 'harcama-defteri-welcome';
+  var welcomed = false;
+  try { welcomed = localStorage.getItem(WKEY) === '1'; } catch (e) {}
+  var welcomeDone = null;
+  var UA = navigator.userAgent || '';
+  var isIOS = /iphone|ipad|ipod/i.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var isAndroid = /android/i.test(UA);
+  function isStandalone() {
+    try { return (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true; } catch (e) { return false; }
+  }
+  var installed = isStandalone();
+  function howHtml() {
+    var h;
+    if (isIOS) h = '<ol><li>Safari’de alttaki <b>Paylaş</b> düğmesine (⬆︎) dokun.</li><li>Listeden <b>Ana Ekrana Ekle</b>’yi seç.</li><li><b>Ekle</b>’ye bas. Uygulama ana ekranına gelir.</li></ol>';
+    else if (isAndroid) h = '<ol><li>Chrome’da sağ üstteki <b>⋮</b> menüsünü aç.</li><li><b>Uygulamayı yükle</b> ya da <b>Ana ekrana ekle</b>’yi seç.</li><li><b>Yükle</b>’ye bas.</li></ol>';
+    else h = '<ol><li>Adres çubuğunun sağındaki <b>yükle</b> simgesine tıkla ya da tarayıcı menüsünden <b>Uygulamayı yükle</b>’yi seç.</li><li><b>Yükle</b>’ye bas.</li></ol>';
+    return h + '<p class="muted hint">Seçenek görünmüyorsa sayfayı Chrome (Android) ya da Safari (iPhone) ile aç. WhatsApp, Instagram gibi uygulama içi tarayıcılarda yükleme çıkmaz.</p>';
+  }
+  function showInstallUi() { $('instBtn').hidden = installed; }
+  function showHelp() { $('ihBody').innerHTML = howHtml(); $('instHelp').hidden = false; $('ihOk').focus(); }
+  function showHow() {
+    $('wHow').innerHTML = howHtml();
+    $('wHow').hidden = false; $('wInst').hidden = true; $('wGo').hidden = false;
+    $('wGo').focus();
+  }
+  function openWelcome(cb) {
+    welcomeDone = cb || null;
+    var lg = $('wLogo'); if (window.__icon) lg.src = window.__icon; else lg.hidden = true;
+    $('wHow').hidden = true; $('wGo').hidden = true; $('wInst').hidden = false;
+    $('welcome').hidden = false;
+    $('wInst').focus();
+  }
+  function finishWelcome() {
+    welcomed = true;
+    try { localStorage.setItem(WKEY, '1'); } catch (e) {}
+    $('welcome').hidden = true;
+    var cb = welcomeDone; welcomeDone = null;
+    if (cb) cb();
+  }
+  function doInstall(fromWelcome) {
+    if (installed) { toast('Uygulama zaten yüklü.', false); return; }
+    var p = window.__bip;
+    if (p && p.prompt) {
+      window.__bip = null;
+      try {
+        p.prompt();
+        var done = function () { if (fromWelcome) finishWelcome(); };
+        Promise.resolve(p.userChoice).then(done, done);
+      } catch (e) { if (fromWelcome) showHow(); else showHelp(); }
+      return;
+    }
+    if (fromWelcome) showHow(); else showHelp();
+  }
+  $('instBtn').addEventListener('click', function () { doInstall(false); });
+  $('wInst').addEventListener('click', function () { doInstall(true); });
+  $('wGo').addEventListener('click', finishWelcome);
+  $('wSkip').addEventListener('click', finishWelcome);
+  $('ihOk').addEventListener('click', function () { $('instHelp').hidden = true; });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('instHelp').hidden) $('instHelp').hidden = true; });
+  window.addEventListener('appinstalled', function () {
+    installed = true; window.__bip = null; showInstallUi();
+    if (!$('welcome').hidden) finishWelcome();
+    toast('Uygulama yüklendi 🎉', false);
+  });
+  if (installed && !welcomed) { welcomed = true; try { localStorage.setItem(WKEY, '1'); } catch (e) {} }
+  showInstallUi();
+
+  // PIN kilidi
+  var PINKEY = 'harcama-defteri-pin';
+  var app = $('app');
+  var pinData = null;
+  try { pinData = JSON.parse(localStorage.getItem(PINKEY)); } catch (e) {}
+  if (!pinData || !pinData.hash) pinData = null;
+  var mode = '', buf = '', first = '', fails = 0, lockedUntil = 0, cancelLabel = '', hiddenAt = 0;
+  var TEXT = {
+    set1: ['PIN oluştur', 'Ekranı kilitlemek için 4 haneli bir PIN seç. Bu PIN verileri şifrelemez.'],
+    set2: ['PIN’i tekrar gir', 'Aynı PIN’i bir kez daha yaz.'],
+    unlock: ['PIN gir', 'Defteri açmak için PIN’ini yaz.'],
+    old: ['Mevcut PIN', 'PIN’i değiştirmek için önce mevcut PIN’i gir.']
+  };
+
+  async function hashPin(pin, salt) {
+    var data = salt + ':' + pin;
+    try {
+      var b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(data));
+      return Array.from(new Uint8Array(b)).map(function (x) { return x.toString(16).padStart(2, '0'); }).join('');
+    } catch (e) {
+      var h = 5381;
+      for (var i = 0; i < data.length; i++) h = ((h << 5) + h + data.charCodeAt(i)) | 0;
+      return 'f' + h;
+    }
+  }
+
+  // Parmak izi (cihazın WebAuthn doğrulaması): PIN'e ek rahat giriş, PIN her zaman yedek kalır
+  var BIOKEY = 'harcama-defteri-bio';
+  var bioId = '';
+  try { bioId = (JSON.parse(localStorage.getItem(BIOKEY)) || {}).id || ''; } catch (e) {}
+  var bioOk = false, bioBusy = false;
+  function b64e(buf) { var s2 = ''; new Uint8Array(buf).forEach(function (c) { s2 += String.fromCharCode(c); }); return btoa(s2).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+  function b64d(str) { str = str.replace(/-/g, '+').replace(/_/g, '/'); while (str.length % 4) str += '='; var bin = atob(str), u = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; }
+  function rnd(n) { var u = new Uint8Array(n); crypto.getRandomValues(u); return u; }
+  function refreshBio() {
+    $('bioRow').hidden = !(bioOk && pinData);
+    $('chBio').textContent = bioId ? '👆 Parmak iziyle girişi kapat' : '👆 Parmak iziyle girişi aç';
+    $('bioBtn').hidden = !(bioId && pinData && mode === 'unlock' && !$('lock').hidden);
+  }
+  async function bioCheckSupport() {
+    try {
+      if (window.isSecureContext && window.PublicKeyCredential && navigator.credentials && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
+        bioOk = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+      }
+    } catch (e) { bioOk = false; }
+    refreshBio();
+  }
+  async function bioEnable() {
+    if (bioBusy) return; bioBusy = true;
+    try {
+      var cred = await navigator.credentials.create({ publicKey: {
+        challenge: rnd(32), rp: { name: 'Harcama Defteri', id: location.hostname },
+        user: { id: rnd(16), name: 'harcama-defteri', displayName: 'Harcama Defteri' },
+        pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+        authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required', residentKey: 'discouraged' },
+        timeout: 60000, attestation: 'none' } });
+      bioId = b64e(cred.rawId);
+      try { localStorage.setItem(BIOKEY, JSON.stringify({ id: bioId })); } catch (e) { bioId = ''; toast('Bu tarayıcı ayarı kaydedemedi.', false); }
+      if (bioId) toast('Parmak izi girişi açıldı.', false);
+    } catch (e) {
+      toast(e && e.name === 'NotAllowedError' ? 'Parmak izi onaylanmadı, giriş açılmadı.' : 'Parmak izi açılamadı.', false);
+    }
+    bioBusy = false; refreshBio();
+  }
+  function bioDisable() {
+    bioId = ''; try { localStorage.removeItem(BIOKEY); } catch (e) {}
+    refreshBio(); toast('Parmak izi girişi kapatıldı. PIN ile girmeye devam edersin.', false);
+  }
+  async function bioUnlock() {
+    if (bioBusy || !bioId || mode !== 'unlock' || $('lock').hidden) return;
+    bioBusy = true;
+    try {
+      var got = await navigator.credentials.get({ publicKey: {
+        challenge: rnd(32), rpId: location.hostname, userVerification: 'required', timeout: 60000,
+        allowCredentials: [{ type: 'public-key', id: b64d(bioId), transports: ['internal'] }] } });
+      if (got && mode === 'unlock') { fails = 0; bioBusy = false; closeLock(); render(); return; }
+    } catch (e) {
+      if (e && e.name === 'InvalidStateError') { /* kayıtlı anahtar artık yok */ }
+      else if (e && e.name !== 'NotAllowedError' && e.name !== 'AbortError') $('lockErr').textContent = 'Parmak izi kullanılamadı, PIN gir.';
+      else $('lockErr').textContent = 'Parmak izi okunamadı. Tekrar dene ya da PIN gir.';
+    }
+    bioBusy = false;
+  }
+  function openUnlock() { openLock('unlock'); if (bioId) setTimeout(bioUnlock, 300); }
+
+  function drawLock() {
+    $('lockTitle').textContent = TEXT[mode][0];
+    $('lockSub').textContent = TEXT[mode][1];
+    Array.prototype.forEach.call($('dots').children, function (d, i) { d.className = i < buf.length ? 'on' : ''; });
+    $('skip').hidden = mode === 'unlock' || !cancelLabel;
+    $('skip').textContent = cancelLabel;
+    $('bioBtn').hidden = !(bioId && pinData && mode === 'unlock');
+  }
+  function openLock(m, cancel) {
+    mode = m; cancelLabel = cancel || ''; buf = ''; first = '';
+    $('lockErr').textContent = '';
+    drawLock();
+    $('lock').hidden = false;
+    app.hidden = true;
+    $('toast').hidden = true;
+  }
+  function closeLock() {
+    buf = '';
+    $('lock').hidden = true;
+    app.hidden = false;
+    if (!welcomed) openWelcome(null);
+  }
+  function refreshPinButtons() {
+    
+    $('chPin').textContent = pinData ? 'PIN değiştir' : 'PIN koy';
+  }
+  function press(d) {
+    if (Date.now() < lockedUntil || buf.length >= 4) return;
+    buf += d;
+    drawLock();
+    if (buf.length === 4) setTimeout(submit, 120);
+  }
+  function back() { buf = buf.slice(0, -1); drawLock(); }
+
+  async function submit() {
+    var pin = buf; buf = '';
+    if (mode === 'set1') { first = pin; mode = 'set2'; $('lockErr').textContent = ''; drawLock(); return; }
+    if (mode === 'set2') {
+      if (pin !== first) { mode = 'set1'; first = ''; $('lockErr').textContent = 'PIN’ler eşleşmedi. Baştan dene.'; drawLock(); return; }
+      var salt = Math.random().toString(36).slice(2) + Date.now().toString(36);
+      var h = await hashPin(pin, salt);
+      try { localStorage.setItem(PINKEY, JSON.stringify({ salt: salt, hash: h })); }
+      catch (e) { mode = 'set1'; first = ''; $('lockErr').textContent = 'Bu tarayıcı PIN’i kaydedemedi.'; drawLock(); return; }
+      pinData = { salt: salt, hash: h };
+      refreshPinButtons(); refreshBio(); closeLock(); render(); toast('PIN kaydedildi.', false);
+      return;
+    }
+    var ok = (await hashPin(pin, pinData.salt)) === pinData.hash;
+    if (ok) {
+      fails = 0;
+      if (mode === 'unlock') { closeLock(); render(); } else { openLock('set1', 'Vazgeç'); }
+      return;
+    }
+    fails++;
+    if (fails >= 5) { fails = 0; lockedUntil = Date.now() + 30000; $('lockErr').textContent = 'Çok fazla deneme. 30 saniye bekle.'; }
+    else { $('lockErr').textContent = 'Yanlış PIN.'; }
+    drawLock();
+  }
+
+  var keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫'];
+  $('pad').innerHTML = keys.map(function (k) {
+    return k === '' ? '<button type="button" class="blank" tabindex="-1" aria-hidden="true"></button>'
+      : '<button type="button" data-k="' + k + '"' + (k === '⌫' ? ' aria-label="Sil"' : '') + '>' + k + '</button>';
+  }).join('');
+  $('pad').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-k]');
+    if (!b) return;
+    var k = b.getAttribute('data-k');
+    if (k === '⌫') back(); else press(k);
+  });
+  document.addEventListener('keydown', function (e) {
+    if ($('lock').hidden) return;
+    if (/^[0-9]$/.test(e.key)) press(e.key);
+    else if (e.key === 'Backspace') back();
+  });
+  $('skip').addEventListener('click', function () { closeLock(); render(); });
+  
+  $('bioBtn').addEventListener('click', bioUnlock);
+  $('chBio').addEventListener('click', function () { if (bioId) bioDisable(); else bioEnable(); });
+  $('chPin').addEventListener('click', function () { openLock(pinData ? 'old' : 'set1', 'Vazgeç'); });
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) { hiddenAt = Date.now(); }
+    else if (pinData && hiddenAt && Date.now() - hiddenAt > 30000 && $('lock').hidden && !bioBusy) { openUnlock(); }
+  });
+
+  fillCats();
+  var stored = load();
+  items = stored !== null ? stored : sampleData();
+  debts = loadDebts();
+  notes = loadNotes();
+  book = loadBook();
+  if (stored === null) save(true);
+  render();
+  refreshPinButtons();
+  if (!welcomed && !pinData) openWelcome(function () { openLock('set1', 'Şimdilik geç'); });
+  else if (pinData) openUnlock(); else openLock('set1', 'Şimdilik geç');
+  bioCheckSupport();
+
+  // Yedek: kayıtları dosya olarak al, dosyadan geri yükle
+  var BKKEY = 'harcama-defteri-bk';
+  var bkTs = '';
+  try { bkTs = localStorage.getItem(BKKEY) || ''; } catch (e) {}
+
+  function setCloud(text, bad) {
+    $('cloudStatus').textContent = text;
+    $('cloud').className = 'cloud' + (bad ? ' bad' : '');
+  }
+  function fmtTs(ts) {
+    return new Date(ts).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  }
+  function updateBk() {
+    if (acc && acc.user) {
+      if (cloud.busy) { setCloud('☁ Buluta kaydediliyor…'); return; }
+      if (cloud.err) { setCloud('Buluta kaydedilemedi. “Buluta kaydet”e basıp tekrar dene.', true); return; }
+      if (!hasData()) { setCloud('Henüz buluta kaydedilecek kayıt yok.'); return; }
+      if (!cloudTs) { setCloud('☁ Buluta kaydedilecek…'); return; }
+      if (localTs > cloudTs) { setCloud('☁ Değişiklikler buluta kaydedilecek…'); return; }
+      setCloud('☁ Buluta kaydedildi: ' + fmtTs(cloudTs)); return;
+    }
+    if (!hasData()) { setCloud('Henüz yedeklenecek kayıt yok.'); return; }
+    if (!bkTs) { setCloud('Kayıtlar bu cihazda duruyor. Kaybolmasın diye yedek al.', true); return; }
+    if (localTs > bkTs) { setCloud('Yedeklenmemiş değişiklikler var.', true); return; }
+    var age = Math.floor((Date.now() - new Date(bkTs).getTime()) / 86400000);
+    if (age >= 7) setCloud('Son yedek ' + age + ' gün önce. Yeni yedek almanın zamanı.', true); else setCloud('Son yedek: ' + fmtTs(bkTs));
+  }
+  function scheduleBackup() { updateBk(); autoCloud(); }
+  function cleanItems(arr) {
+    if (!Array.isArray(arr)) return [];
+    return arr.filter(function (i) {
+      return i && (i.type === 'income' || i.type === 'expense') && typeof i.amount === 'number' && isFinite(i.amount) && i.amount > 0 &&
+        typeof i.cat === 'string' && typeof i.id === 'string' && typeof i.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(i.date);
+    }).map(function (i) {
+      return { id: i.id, type: i.type, cat: i.cat.slice(0, 30), amount: i.amount, note: typeof i.note === 'string' ? i.note.slice(0, 60) : '', date: i.date };
+    });
+  }
+  function backupText() {
+    return JSON.stringify({ app: 'harcama-defteri', v: 5, updatedAt: new Date().toISOString(), items: userItems(), debts: debts, cats: custom, notes: notes, book: book });
+  }
+  function markBackedUp() {
+    bkTs = new Date().toISOString();
+    try { localStorage.setItem(BKKEY, bkTs); } catch (e) {}
+    updateBk();
+  }
+  function importText(raw, fromCloud, quiet) {
+    var data;
+    try { data = JSON.parse(raw); } catch (e) { toast('Bu dosya geçerli bir yedek değil.', false); return; }
+    var list = cleanItems(Array.isArray(data) ? data : (data && data.items));
+    var dlist = cleanDebts(data && !Array.isArray(data) ? data.debts : []);
+    var nlist = cleanNotes(data && !Array.isArray(data) ? data.notes : []);
+    var blist = cleanBook(data && !Array.isArray(data) ? data.book : []);
+    if (!list.length && !dlist.length && !nlist.length && !blist.length) { toast('Yedekte kayıt bulunamadı.', false); return; }
+    items = items.filter(function (i) { return !i.sample; });
+    var have = {};
+    items.forEach(function (i) { have[i.id] = true; });
+    var added = list.filter(function (i) { return !have[i.id]; });
+    items = items.concat(added);
+    var dhave = {};
+    debts.forEach(function (d) { dhave[d.id] = true; });
+    var dadded = dlist.filter(function (d) { return !dhave[d.id]; });
+    debts = debts.concat(dadded);
+    var nhave = {};
+    notes.forEach(function (n) { nhave[n.id] = true; });
+    var nadded = nlist.filter(function (n) { return !nhave[n.id]; });
+    notes = notes.concat(nadded);
+    var bhave = {};
+    book.forEach(function (n) { bhave[n.id] = true; });
+    var badded = blist.filter(function (n) { return !bhave[n.id]; });
+    book = book.concat(badded);
+    if (data && !Array.isArray(data)) {
+      ['expense', 'income'].forEach(function (t) { ((data.cats || {})[t] || []).forEach(function (n) { if (typeof n === 'string' && n && custom[t].indexOf(n) < 0 && custom[t].length < 30) custom[t].push(n.slice(0, 30)); }); });
+      sj(CKEY, custom); applyCats(); fillCats();
+    }
+    save();
+    if (dadded.length) saveDebts();
+    if (nadded.length) saveNotes();
+    if (badded.length) saveBook();
+    render();
+    updateBk();
+    var skipped = (list.length - added.length) + (dlist.length - dadded.length) + (nlist.length - nadded.length) + (blist.length - badded.length);
+    var msg = added.length + ' kayıt';
+    if (dlist.length) msg += ', ' + dadded.length + ' borç/alacak';
+    if (nlist.length) msg += ', ' + nadded.length + ' hatırlatıcı';
+    if (blist.length) msg += ', ' + badded.length + ' defter notu';
+    if (!(quiet && !added.length && !dadded.length && !nadded.length && !badded.length)) toast((fromCloud ? '☁ ' : '') + msg + (fromCloud ? ' buluttan' : '') + ' yüklendi' + (skipped ? ' (' + skipped + ' tanesi zaten vardı)' : '') + '.', false);
+  }
+
+  $('bkDown').addEventListener('click', function () {
+    if (!hasData()) { toast('Yedeklenecek kayıt yok.', false); return; }
+    try {
+      var blob = new Blob([backupText()], { type: 'application/json' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'harcama-yedek-' + ymd(new Date()) + '.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+      markBackedUp();
+      toast('Yedek indiriliyor. İndirilenler klasörüne bak.', false);
+    } catch (e) { toast('İndirilemedi. Tarayıcının indirme iznini kontrol et.', false); }
+  });
+  $('csvDown').addEventListener('click', function () {
+    var rows = userItems().slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+    if (!rows.length) { toast('Dışa aktarılacak kayıt yok.', false); return; }
+    function c(v) { v = String(v); if (/^[=+\-@]/.test(v)) v = "'" + v; return '"' + v.replace(/"/g, '""') + '"'; }
+    var t = '\ufeffTarih;Tür;Kategori;Tutar;Not\r\n' + rows.map(function (i) { return [i.date, i.type === 'income' ? 'Gelir' : 'Gider', c(i.cat), String(i.amount).replace('.', ','), c(i.note || '')].join(';'); }).join('\r\n');
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([t], { type: 'text/csv;charset=utf-8' }));
+    a.download = 'harcamalar-' + ymd(new Date()) + '.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+    toast('CSV indiriliyor.', false);
+  });
+  $('bkOpen').addEventListener('click', function () { $('bkFile').click(); });
+  $('bkFile').addEventListener('change', function () {
+    var f = this.files && this.files[0];
+    if (!f) return;
+    var r = new FileReader();
+    r.onload = function () { importText(String(r.result)); };
+    r.onerror = function () { toast('Dosya okunamadı.', false); };
+    r.readAsText(f);
+    this.value = '';
+  });
+  updateBk();
+
+  // ---- Google hesabı ve bulut ----
+  // Firebase ayarı: apiKey ve appId'yi Firebase konsolundan (Proje ayarları > Web uygulaması) buraya yaz.
+  var FB = { apiKey: 'AIzaSyC-1mpdkmPnLM6ZgGHlmN2jqanEObKR2Fc', authDomain: 'bira-mahzenim.firebaseapp.com', projectId: 'bira-mahzenim', appId: '1:544805186034:web:0328edcc839d16640c636b' };
+  var fbOn = !!(FB.apiKey && FB.appId), fb = null, acc = { user: null }, GIN = 'harcama-gin';
+  function accShow(u) {
+    $('accOut').hidden = !!u; $('accIn').hidden = !u;
+    if (u) { var nm = u.displayName || u.email || ''; $('accName').textContent = nm; $('accMail').textContent = u.email || ''; $('accAv').textContent = (nm.charAt(0) || '?').toUpperCase(); }
+  }
+  if (!fbOn) { $('gIn').disabled = true; }
+  async function fbInit() {
+    if (fb) return fb;
+    var V = 'https://www.gstatic.com/firebasejs/10.14.1/';
+    var A = await import(V + 'firebase-app.js'), Au = await import(V + 'firebase-auth.js'), F = await import(V + 'firebase-firestore.js');
+    var app = A.initializeApp({ apiKey: FB.apiKey, authDomain: FB.authDomain, projectId: FB.projectId, appId: FB.appId });
+    fb = { A: Au, F: F, auth: Au.getAuth(app), db: F.getFirestore(app) };
+    return fb;
+  }
+  function cdoc(u) { return fb.F.doc(fb.db, 'harcamaDefteri', u.uid); }
+  async function pullCloud(u) {
+    try {
+      var snap = await fb.F.getDoc(cdoc(u));
+      if (!snap.exists() || !snap.data().payload) { toast('Bulutta kayıt yok, ilk yedek alınıyor.', false); autoCloud(); return; }
+      syncedTs = snap.data().updatedAt || ''; try { localStorage.setItem(SYNCKEY, syncedTs); } catch (e) {}
+      importText(snap.data().payload, true);
+    } catch (e) { toast('Buluttan yüklenemedi.', false); }
+  }
+  // Cihazdaki kayıtların sahibi: başka Google hesabıyla girilince önceki hesabın kayıtları yeni hesaba karışmasın
+  var OWNKEY = 'harcama-defteri-owner', STASHKEY = 'harcama-defteri-stash-';
+  function ownerUid() { try { return localStorage.getItem(OWNKEY) || ''; } catch (e) { return ''; } }
+  function wipeLocal() {
+    clearTimeout(cloud.timer); cloud.again = false;
+    items = []; debts = []; notes = []; book = [];
+    custom = { expense: [], income: [] }; applyCats(); fillCats();
+    [KEY, DKEY, NKEY, BKEY, CKEY, TSKEY, SYNCKEY, CTSKEY, BKKEY].forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
+    localTs = ''; syncedTs = ''; cloudTs = ''; bkTs = '';
+    filter = 'all'; q = ''; editId = ''; nEdit = ''; bEdit = ''; view = { y: today.getFullYear(), m: today.getMonth() };
+  }
+  // Hesap değişti mi bak. Değiştiyse yeni hesap için cihazı temizler, true döner.
+  function switchOwner(u) {
+    var old = ownerUid();
+    if (!old) { try { localStorage.setItem(OWNKEY, u.uid); } catch (e) {} return false; }
+    if (old === u.uid) return false;
+    // önceki hesabın buluta çıkmamış değişiklikleri varsa kaybolmasın diye ayır
+    if (hasData() && (!cloudTs || localTs > cloudTs)) { try { localStorage.setItem(STASHKEY + old, backupText()); } catch (e) {} }
+    wipeLocal();
+    try { localStorage.setItem(OWNKEY, u.uid); } catch (e) {}
+    render();
+    return true;
+  }
+  function restoreStash(u) {
+    var raw = null; try { raw = localStorage.getItem(STASHKEY + u.uid); } catch (e) {}
+    if (!raw) return;
+    try { localStorage.removeItem(STASHKEY + u.uid); } catch (e) {}
+    importText(raw, false, true);
+  }
+  if (fbOn) fbInit().then(function (x) {
+    x.A.onAuthStateChanged(x.auth, async function (u) {
+      acc.user = u; accShow(u);
+      if (u) {
+        var changed = switchOwner(u);
+        var fresh = false; try { fresh = sessionStorage.getItem(GIN) === '1'; sessionStorage.removeItem(GIN); } catch (e) {}
+        if (changed) { toast('Hesap değişti: ' + (u.displayName || u.email || '') + ' kayıtları yükleniyor.', false); await pullCloud(u); restoreStash(u); }
+        else if (fresh) pullCloud(u);
+        else if (hasData() && (!cloudTs || localTs > cloudTs)) autoCloud();
+      }
+      updateBk();
+    });
+  }).catch(function () {});
+  $('gIn').addEventListener('click', async function () {
+    try {
+      var x = await fbInit();
+      try { sessionStorage.setItem(GIN, '1'); } catch (e) {}
+      var p = new x.A.GoogleAuthProvider(); p.setCustomParameters({ prompt: 'select_account' });
+      try { await x.A.signInWithPopup(x.auth, p); }
+      catch (e) {
+        if (e && (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment')) await x.A.signInWithRedirect(x.auth, p);
+        else if (!e || (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request')) throw e;
+      }
+    } catch (e) { toast('Giriş yapılamadı.', false); }
+  });
+  // Otomatik bulut kaydı: değişiklikten kısa süre sonra kaydeder. Başka cihaz yazmışsa önce birleştirir.
+  function autoCloud() {
+    var u = acc && acc.user; if (!u || !fb) return;
+    clearTimeout(cloud.timer);
+    cloud.timer = setTimeout(function () { cloudPush(u, false); }, 1500);
+  }
+  async function cloudPush(u, manual) {
+    if (cloud.busy) { cloud.again = true; return; }
+    if (!hasData()) { if (manual) toast('Kaydedilecek kayıt yok.', false); updateBk(); return; }
+    cloud.busy = true; cloud.err = false; updateBk();
+    try {
+      var work = (async function () {
+        var snap = await fb.F.getDoc(cdoc(u));
+        if (snap.exists()) {
+          var d = snap.data(), ts = d.updatedAt || '';
+          if (ts && ts !== syncedTs && d.payload) importText(d.payload, true, true);
+        }
+        var now = new Date().toISOString();
+        await fb.F.setDoc(cdoc(u), { payload: backupText(), updatedAt: now });
+        return now;
+      })();
+      var now = await Promise.race([work, new Promise(function (_, rej) { setTimeout(function () { rej(new Error('timeout')); }, 15000); })]);
+      syncedTs = now; cloudTs = now;
+      try { localStorage.setItem(SYNCKEY, now); localStorage.setItem(CTSKEY, now); } catch (e) {}
+      if (manual) toast('☁ Buluta kaydedildi!', false);
+    } catch (e) {
+      cloud.err = true;
+      if (manual) toast('Buluta kaydedilemedi.', false);
+    }
+    cloud.busy = false; updateBk();
+    if (cloud.again) { cloud.again = false; autoCloud(); }
+  }
+  $('cSave').addEventListener('click', function () { var u = acc.user; if (u) cloudPush(u, true); });
+  $('gOut').addEventListener('click', async function () { try { await fb.A.signOut(fb.auth); toast('Çıkış yapıldı.', false); } catch (e) {} });
+})();
+</script>
+
+</body>
+</html>
